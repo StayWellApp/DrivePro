@@ -1,6 +1,8 @@
 {
   "name": "with-tailwind",
   "private": true,
+  "version": "1.0.0",
+  "type": "module",
   "scripts": {
     "build": "turbo run build",
     "postinstall": "prisma generate --schema=packages/database/prisma/schema.prisma",
