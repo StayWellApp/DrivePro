@@ -97,6 +97,20 @@ model LessonSession {
   //gps_route Unsupported("geography(LineString, 4326)")?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  faultPins FaultPin[]
+}
+
+model FaultPin {
+  id                String   @id @default(uuid())
+  school_id         String
+  lesson_session_id String
+  lessonSession     LessonSession @relation(fields: [lesson_session_id], references: [id])
+  category          String
+  latitude          Float
+  longitude         Float
+  timestamp         DateTime
+  createdAt         DateTime @default(now())
 }
 
 model Payment {
