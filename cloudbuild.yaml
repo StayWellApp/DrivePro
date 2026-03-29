@@ -1,0 +1,93 @@
+steps:
+  # 1. Build the Admin App Docker Image
+  - name: 'gcr.io/cloud-builders/docker'
+    id: build-admin
+    args:
+      - 'build'
+      - '-t'
+      - 'europe-west4-docker.pkg.dev/drivepro-production/drivepro-repo/admin:$COMMIT_SHA'
+      - '-t'
+      - 'europe-west4-docker.pkg.dev/drivepro-production/drivepro-repo/admin:latest'
+      - '-f'
+      - 'apps/admin/Dockerfile'
+      - '.'
+
+  # 2. Push the image to Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    id: push-admin
+    args:
+      - 'push'
+      - 'europe-west4-docker.pkg.dev/drivepro-production/drivepro-repo/admin:$COMMIT_SHA'
+    waitFor: ['build-admin']
+
+  # 3. Push the "latest" tag as well
+  - name: 'gcr.io/cloud-builders/docker'
+    id: push-admin-latest
+    args:
+      - 'push'
+      - 'europe-west4-docker.pkg.dev/drivepro-production/drivepro-repo/admin:latest'
+    waitFor: ['push-admin']
+
+  # 4. Run Prisma Migrations using Cloud SQL Auth Proxy
+  - name: 'node:18'
+    id: db-migrate
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        # Download Cloud SQL Auth Proxy
+        wget https://dl.google.com/cloudsql/cloud_sql_proxy.linux.amd64 -O cloud_sql_proxy
+        chmod +x cloud_sql_proxy
+
+        # Start Proxy in background
+        ./cloud_sql_proxy -instances=drivepro-production:europe-west4:drivepro-db-main=tcp:5432 &
+        PROXY_PID=$!
+
+        # Wait for Proxy to be ready
+        sleep 5
+
+        # Run Migration
+        # Assuming DB_USER, DB_PASS, and DB_NAME are provided as environment variables
+        export DATABASE_URL="postgresql://$$DB_USER:$$DB_PASS@127.0.0.1:5432/$$DB_NAME"
+        npm ci
+        cd packages/database
+        npx prisma migrate deploy
+
+        # Kill Proxy
+        kill $PROXY_PID
+    secretEnv: ['DB_USER', 'DB_PASS', 'DB_NAME']
+    waitFor: ['push-admin-latest']
+
+  # 5. Deploy to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: deploy-admin
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'admin-app'
+      - '--image'
+      - 'europe-west4-docker.pkg.dev/drivepro-production/drivepro-repo/admin:$COMMIT_SHA'
+      - '--region'
+      - 'europe-west4'
+      - '--set-env-vars'
+      - 'NEXT_PUBLIC_DEFAULT_LOCALE=cs'
+      - '--set-secrets'
+      - 'DATABASE_URL=DATABASE_URL_UNIX:latest' # Unix socket connection string in Secret Manager
+      - '--add-cloudsql-instances'
+      - 'drivepro-production:europe-west4:drivepro-db-main'
+      - '--allow-unauthenticated'
+    waitFor: ['db-migrate']
+
+# Store Secrets in Secret Manager and map them here
+availableSecrets:
+  secretManager:
+    - versionName: projects/drivepro-production/secrets/DB_USER/versions/latest
+      env: 'DB_USER'
+    - versionName: projects/drivepro-production/secrets/DB_PASS/versions/latest
+      env: 'DB_PASS'
+    - versionName: projects/drivepro-production/secrets/DB_NAME/versions/latest
+      env: 'DB_NAME'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
