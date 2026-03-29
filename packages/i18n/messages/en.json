@@ -20,5 +20,28 @@
     "required": "This field is required",
     "minTopup": "Minimum amount is 100 CZK",
     "invalidEmail": "Invalid email"
+  },
+  "LessonsList": {
+    "title": "My Lessons",
+    "description": "View your past and upcoming driving lessons.",
+    "upcoming": "Upcoming",
+    "noUpcoming": "No upcoming lessons scheduled.",
+    "scheduled": "Scheduled",
+    "instructor": "Instructor",
+    "vehicle": "Vehicle",
+    "past": "Past Lessons",
+    "noPast": "No past lessons found.",
+    "completed": "Completed",
+    "viewReplay": "View Lesson Replay"
+  },
+  "LessonDetail": {
+    "backToList": "Back to Lessons",
+    "title": "Lesson Replay",
+    "duration": "Duration",
+    "distance": "Total Distance",
+    "faults": "Total Faults",
+    "mapRoute": "Route & Incidents",
+    "faultSummary": "Fault Summary",
+    "noFaults": "Great job! No faults recorded during this lesson."
   }
 }
