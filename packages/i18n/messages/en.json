@@ -15,5 +15,10 @@
     "selectAmount": "Select Amount",
     "customAmount": "Custom Amount",
     "payButton": "Pay with Stripe"
+  },
+  "Validations": {
+    "required": "This field is required",
+    "minTopup": "Minimum amount is 100 CZK",
+    "invalidEmail": "Invalid email"
   }
 }

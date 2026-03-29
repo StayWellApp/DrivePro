@@ -15,5 +15,10 @@
     "selectAmount": "Vyberte sumu",
     "customAmount": "Vlastná suma",
     "payButton": "Zaplatiť cez Stripe"
+  },
+  "Validations": {
+    "required": "Toto pole je povinné",
+    "minTopup": "Minimálna suma je 100 CZK",
+    "invalidEmail": "Neplatný e-mail"
   }
 }
