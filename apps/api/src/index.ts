@@ -4,6 +4,7 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
 import { prisma } from 'database';
+import { generatePdf, ReportData } from './services/pdfGenerator';
 
 const app = express();
 const server = createServer(app);
@@ -21,7 +22,7 @@ app.use(express.json());
 
 // Heartbeat Endpoint
 app.post('/lessons/:id/heartbeat', async (req: Request, res: Response): Promise<any> => {
-  const lessonId = req.params.id;
+  const lessonId = req.params.id as string;
   const { coordinates, faultPins, school_id } = req.body;
 
   if (!school_id) {
@@ -37,7 +38,7 @@ app.post('/lessons/:id/heartbeat', async (req: Request, res: Response): Promise<
       const activeSession = await prisma.lessonSession.findFirst({
         where: {
           lesson_id: lessonId,
-          school_id: school_id
+          school_id: school_id as string
         },
         orderBy: {
           createdAt: 'desc'
@@ -73,6 +74,47 @@ app.post('/lessons/:id/heartbeat', async (req: Request, res: Response): Promise<
   });
 
   return res.status(200).json({ success: true });
+});
+
+// Report Endpoint
+app.get('/lessons/:id/report', async (req: Request, res: Response): Promise<any> => {
+  const lessonId = req.params.id as string;
+
+  try {
+    const lesson = await prisma.lesson.findUnique({
+      where: { id: lessonId },
+      include: { student: true, instructor: true }
+    });
+
+    if (!lesson) {
+      return res.status(404).json({ error: 'Lesson not found' });
+    }
+
+    const faultPins = await prisma.faultPin.findMany({
+      where: { lessonSession: { lesson_id: lessonId } }
+    });
+
+    const faults: Record<string, number> = faultPins.reduce((acc: Record<string, number>, pin: any) => {
+      acc[pin.category] = (acc[pin.category] || 0) + 1;
+      return acc;
+    }, {});
+
+    const reportData: ReportData = {
+      studentName: lesson.student.name,
+      instructorName: lesson.instructor.name,
+      startTime: lesson.startTime.toLocaleString(),
+      faults
+    };
+
+    const pdfBuffer = await generatePdf(reportData);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=lesson-report-${lessonId}.pdf`);
+    return res.status(200).send(pdfBuffer);
+  } catch (error) {
+    console.error('Error generating report:', error);
+    return res.status(500).json({ error: 'Failed to generate report' });
+  }
 });
 
 io.on('connection', (socket) => {
