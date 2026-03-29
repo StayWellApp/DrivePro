@@ -20,5 +20,28 @@
     "required": "Toto pole je povinné",
     "minTopup": "Minimálna suma je 100 CZK",
     "invalidEmail": "Neplatný e-mail"
+  },
+  "LessonsList": {
+    "title": "Moje lekcie",
+    "description": "Zobraziť minulé a nadchádzajúce lekcie autoškoly.",
+    "upcoming": "Nadchádzajúce",
+    "noUpcoming": "Nie sú naplánované žiadne nadchádzajúce lekcie.",
+    "scheduled": "Naplánované",
+    "instructor": "Inštruktor",
+    "vehicle": "Vozidlo",
+    "past": "Minulé lekcie",
+    "noPast": "Neboli nájdené žiadne minulé lekcie.",
+    "completed": "Dokončené",
+    "viewReplay": "Zobraziť záznam lekcie"
+  },
+  "LessonDetail": {
+    "backToList": "Späť na lekcie",
+    "title": "Záznam lekcie",
+    "duration": "Dĺžka",
+    "distance": "Celková vzdialenosť",
+    "faults": "Celkom chýb",
+    "mapRoute": "Trasa a incidenty",
+    "faultSummary": "Zhrnutie chýb",
+    "noFaults": "Skvelá práca! Počas tejto lekcie neboli zaznamenané žiadne chyby."
   }
 }
