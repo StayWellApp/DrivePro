@@ -3,6 +3,7 @@ import express, { Request, Response } from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
+import { prisma } from 'database';
 
 const app = express();
 const server = createServer(app);
@@ -19,7 +20,7 @@ app.use(cors());
 app.use(express.json());
 
 // Heartbeat Endpoint
-app.post('/lessons/:id/heartbeat', (req: Request, res: Response) => {
+app.post('/lessons/:id/heartbeat', async (req: Request, res: Response): Promise<any> => {
   const lessonId = req.params.id;
   const { coordinates, faultPins, school_id } = req.body;
 
@@ -27,14 +28,47 @@ app.post('/lessons/:id/heartbeat', (req: Request, res: Response) => {
     return res.status(400).json({ error: 'school_id is required' });
   }
 
-  // TODO: Save to DB via Database package
+  // TODO: Save GPS route to DB via Database package
 
-  // Broadcast real-time position to Admin Map
+  // Save FaultPins to DB
+  if (faultPins && Array.isArray(faultPins) && faultPins.length > 0) {
+    try {
+      // Find the active LessonSession for this lesson
+      const activeSession = await prisma.lessonSession.findFirst({
+        where: {
+          lesson_id: lessonId,
+          school_id: school_id
+        },
+        orderBy: {
+          createdAt: 'desc'
+        }
+      });
+
+      if (activeSession) {
+        await prisma.faultPin.createMany({
+          data: faultPins.map((pin: any) => ({
+            school_id: school_id,
+            lesson_session_id: activeSession.id,
+            category: pin.category,
+            timestamp: new Date(pin.timestamp),
+            latitude: pin.location.latitude,
+            longitude: pin.location.longitude
+          }))
+        });
+      } else {
+        console.warn(`No active LessonSession found for lesson ${lessonId}`);
+      }
+    } catch (error) {
+      console.error('Error saving fault pins:', error);
+    }
+  }
+
+  // Broadcast real-time position AND real-time fault pins to Admin Map
   // Rooms can be used per school for multi-tenancy live map
   io.to(`school_${school_id}`).emit('lesson_update', {
     lessonId,
     coordinates,
-    faultPins,
+    faultPins: faultPins || [],
     timestamp: new Date().toISOString()
   });
 
