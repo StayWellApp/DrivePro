@@ -2,7 +2,6 @@ FROM node:22-bookworm-slim AS base
 
 FROM base AS builder
 WORKDIR /app
-RUN npm install -g npm@latest
 RUN npm install -g turbo
 COPY . .
 RUN turbo prune admin --docker
