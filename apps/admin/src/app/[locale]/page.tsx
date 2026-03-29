@@ -19,7 +19,7 @@ export default async function Home() {
           <p className="text-gray-500 italic">No schools found in the database yet.</p>
         ) : (
           <ul className="list-disc ml-5">
-            {schools.map((school) => (
+            {schools.map((school: any) => (
               <li key={school.id}>{school.name}</li>
             ))}
           </ul>
