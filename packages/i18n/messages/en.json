@@ -1,0 +1,19 @@
+{
+  "StudentsPage": {
+    "title": "Student Management (Admin)",
+    "nameLabel": "Student Name",
+    "emailLabel": "Email",
+    "courseCategoryLabel": "Course Category",
+    "categoryA": "Category A (Motorcycles)",
+    "categoryB": "Category B (Cars)",
+    "categoryC": "Category C (Trucks)",
+    "registerButton": "Register Student"
+  },
+  "TopupPage": {
+    "title": "Top-up Balance",
+    "description": "Add funds to your account to pay for lessons.",
+    "selectAmount": "Select Amount",
+    "customAmount": "Custom Amount",
+    "payButton": "Pay with Stripe"
+  }
+}

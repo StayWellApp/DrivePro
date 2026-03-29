@@ -1,0 +1,19 @@
+{
+  "StudentsPage": {
+    "title": "Správa studentů (Admin)",
+    "nameLabel": "Jméno studenta",
+    "emailLabel": "E-mail",
+    "courseCategoryLabel": "Kategorie kurzu",
+    "categoryA": "Kategorie A (Motocykly)",
+    "categoryB": "Kategorie B (Automobily)",
+    "categoryC": "Kategorie C (Nákladní vozidla)",
+    "registerButton": "Registrovat studenta"
+  },
+  "TopupPage": {
+    "title": "Dobití kreditu",
+    "description": "Přidejte prostředky na svůj účet k úhradě lekcí.",
+    "selectAmount": "Vyberte částku",
+    "customAmount": "Vlastní částka",
+    "payButton": "Zaplatit přes Stripe"
+  }
+}
