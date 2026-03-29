@@ -1,13 +1,13 @@
 // packages/database/prisma/schema.prisma
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["postgresqlExtensions"]
+  //previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
   provider   = "postgresql"
   url        = env("DATABASE_URL")
-  extensions = [postgis(version: "3.3.2")]
+  //extensions = [postgis(version: "3.3.2")]
 }
 
 model School {
@@ -64,7 +64,7 @@ model Vehicle {
   licensePlate String
   make         String
   model        String
-  location     Unsupported("geography(Point, 4326)")?
+  //location     Unsupported("geography(Point, 4326)")?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -94,7 +94,7 @@ model LessonSession {
   school_id String
   lesson_id String
   lesson    Lesson   @relation(fields: [lesson_id], references: [id])
-  gps_route Unsupported("geography(LineString, 4326)")?
+  //gps_route Unsupported("geography(LineString, 4326)")?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
