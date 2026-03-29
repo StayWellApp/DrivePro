@@ -29,6 +29,7 @@ model Student {
   school     School   @relation(fields: [school_id], references: [id])
   name       String
   email      String
+  balance    Float    @default(0)
   courseType CourseType
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
@@ -44,13 +45,14 @@ enum CourseType {
 }
 
 model Instructor {
-  id        String   @id @default(uuid())
-  school_id String
-  school    School   @relation(fields: [school_id], references: [id])
-  name      String
-  email     String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String   @id @default(uuid())
+  school_id    String
+  school       School   @relation(fields: [school_id], references: [id])
+  name         String
+  email        String
+  availability Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   lessons Lesson[]
 }
@@ -62,6 +64,7 @@ model Vehicle {
   licensePlate String
   make         String
   model        String
+  location     Unsupported("geography(Point, 4326)")?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -91,7 +94,7 @@ model LessonSession {
   school_id String
   lesson_id String
   lesson    Lesson   @relation(fields: [lesson_id], references: [id])
-  route     Unsupported("geography(LineString, 4326)")?
+  gps_route Unsupported("geography(LineString, 4326)")?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

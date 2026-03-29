@@ -15,5 +15,10 @@
     "selectAmount": "Vyberte částku",
     "customAmount": "Vlastní částka",
     "payButton": "Zaplatit přes Stripe"
+  },
+  "Validations": {
+    "required": "Toto pole je povinné",
+    "minTopup": "Minimální částka je 100 CZK",
+    "invalidEmail": "Neplatný e-mail"
   }
 }
