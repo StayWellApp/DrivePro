@@ -1,14 +1,13 @@
-FROM node:18-alpine AS base
+FROM node:22-bookworm-slim AS base
 
 FROM base AS builder
-RUN apk update && apk add --no-cache libc6-compat
 WORKDIR /app
+RUN npm install -g npm@latest
 RUN npm install -g turbo
 COPY . .
 RUN turbo prune admin --docker
 
 FROM base AS installer
-RUN apk update && apk add --no-cache libc6-compat
 WORKDIR /app
 
 # First install the dependencies (as they change less often)
