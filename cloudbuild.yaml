@@ -41,7 +41,7 @@ steps:
 
         # Start Proxy in background
         ./cloud_sql_proxy -instances=drivepro-production:europe-west4:drivepro-db-main=tcp:5432 &
-        PROXY_PID=$!
+        _PROXY_PID=$!
 
         # Wait for Proxy to be ready
         sleep 5
@@ -54,7 +54,7 @@ steps:
         npx prisma migrate deploy
 
         # Kill Proxy
-        kill $PROXY_PID
+        kill $_PROXY_PID
     secretEnv: ['DB_USER', 'DB_PASS', 'DB_NAME']
     waitFor: ['push-admin-latest']
 
