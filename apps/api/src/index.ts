@@ -21,7 +21,7 @@ app.use(express.json());
 
 // Heartbeat Endpoint
 app.post('/lessons/:id/heartbeat', async (req: Request, res: Response): Promise<any> => {
-  const lessonId = req.params.id;
+  const lessonId = req.params.id as string;
   const { coordinates, faultPins, school_id } = req.body;
 
   if (!school_id) {
