@@ -10,6 +10,7 @@
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
+    "@react-leaflet/core": "^3.0.0",
     "@repo/i18n": "^1.0.0",
     "@repo/schema": "^1.0.0",
     "@stripe/react-stripe-js": "^6.0.0",

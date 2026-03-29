@@ -102,15 +102,17 @@ model LessonSession {
 }
 
 model FaultPin {
-  id                String   @id @default(uuid())
-  school_id         String
-  lesson_session_id String
-  lessonSession     LessonSession @relation(fields: [lesson_session_id], references: [id])
-  category          String
-  latitude          Float
-  longitude         Float
-  timestamp         DateTime
-  createdAt         DateTime @default(now())
+  id                   String   @id @default(uuid())
+  school_id            String
+  lesson_session_id    String
+  lessonSession        LessonSession @relation(fields: [lesson_session_id], references: [id])
+  category             String
+  latitude             Float
+  longitude            Float
+  timestamp            DateTime
+  video_file_name      String?
+  video_offset_seconds Int?
+  createdAt            DateTime @default(now())
 }
 
 model Payment {
