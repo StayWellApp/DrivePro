@@ -1,4 +1,4 @@
-import wkx from 'wkx';
+import * as wkx from 'wkx';
 
 export function mapGeometryToGeoJSON(geometry: Buffer | string | null): any | null {
   if (!geometry) {
