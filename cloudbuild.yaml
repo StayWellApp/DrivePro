@@ -39,7 +39,7 @@ steps:
       - 'cloudsql:/cloudsql'
       - 'gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.8.1'
       - '--unix-socket=/cloudsql'
-      - 'drivepro-production:europe-west4:drivepro-db'
+      - 'drivepro-production:europe-west4:drivepro-db-main'
     waitFor: ['push-admin-latest']
     volumes:
       - name: 'cloudsql'
@@ -56,7 +56,7 @@ steps:
         sleep 2
 
         # Run Migration
-        export DATABASE_URL="postgresql://$$DB_USER:$$DB_PASS@localhost/$$DB_NAME?host=/cloudsql/drivepro-production:europe-west4:drivepro-db"
+        export DATABASE_URL="postgresql://$$DB_USER:$$DB_PASS@localhost/$$DB_NAME?host=/cloudsql/drivepro-production:europe-west4:drivepro-db-main"
         npm ci
         cd packages/database
         npx prisma migrate deploy
