@@ -28,21 +28,30 @@ steps:
       - 'europe-west4-docker.pkg.dev/drivepro-production/drivepro-repo/admin:latest'
     waitFor: ['push-admin']
 
-  # 4. Run Prisma Migrations using Cloud SQL Auth Proxy
+  # 4a. Start the Cloud SQL Proxy
+  - name: 'gcr.io/cloud-builders/docker'
+    id: start-proxy
+    args:
+      - 'run'
+      - '-d'
+      - '--name=cloud-sql-proxy'
+      - '-v'
+      - 'cloudsql:/cloudsql'
+      - 'gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.8.1'
+      - '--unix-socket=/cloudsql'
+      - 'drivepro-production:europe-west4:drivepro-db'
+    waitFor: ['push-admin-latest']
+    volumes:
+      - name: 'cloudsql'
+        path: '/cloudsql'
+
+  # 4b. Run Prisma Migrations using Cloud SQL Auth Proxy
   - name: 'node:18'
     id: db-migrate
     entrypoint: 'bash'
     args:
       - '-c'
       - |
-        # Download Cloud SQL Auth Proxy
-        curl -o cloud-sql-proxy https://storage.googleapis.com/cloud-sql-connectors/cloud-sql-proxy/v2.8.1/cloud-sql-proxy.linux.amd64
-        chmod +x cloud-sql-proxy
-
-        # Start Proxy in background with Unix socket
-        ./cloud-sql-proxy drivepro-production:europe-west4:drivepro-db --unix-socket /cloudsql &
-        _PROXY_PID=$!
-
         # Wait for Proxy to be ready
         sleep 2
 
@@ -51,11 +60,8 @@ steps:
         npm ci
         cd packages/database
         npx prisma migrate deploy
-
-        # Kill Proxy
-        kill $_PROXY_PID
     secretEnv: ['DB_USER', 'DB_PASS', 'DB_NAME']
-    waitFor: ['push-admin-latest']
+    waitFor: ['start-proxy']
     volumes:
       - name: 'cloudsql'
         path: '/cloudsql'
