@@ -28,34 +28,28 @@ steps:
       - 'europe-west4-docker.pkg.dev/drivepro-production/drivepro-repo/admin:latest'
     waitFor: ['push-admin']
 
-  # 4. Run Prisma Migrations using Cloud SQL Auth Proxy
-  - name: 'node:18'
+  # Step 1: The Provider (Starts the Proxy)
+  - name: 'gcr.io/cloud-builders/docker'
+    id: start-proxy
+    args: ['run', '-d', '--name=cloud-sql-proxy', '-v', 'cloudsql:/cloudsql', 'gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.8.1', '--unix-socket=/cloudsql', 'drivepro-production:europe-west4:drivepro-db-main']
+    waitFor: ['push-admin-latest']
+    volumes:
+      - name: 'cloudsql'
+        path: '/cloudsql'
+
+  # Step 2: The Consumer (Runs the Migration)
+  - name: 'gcr.io/cloud-builders/npm'
     id: db-migrate
     entrypoint: 'bash'
     args:
       - '-c'
       - |
-        # Download Cloud SQL Auth Proxy
-        curl -o cloud-sql-proxy https://storage.googleapis.com/cloud-sql-connectors/cloud-sql-proxy/v2.8.1/cloud-sql-proxy.linux.amd64
-        chmod +x cloud-sql-proxy
-
-        # Start Proxy in background with Unix socket
-        ./cloud-sql-proxy drivepro-production:europe-west4:drivepro-db-main --unix-socket /cloudsql &
-        _PROXY_PID=$!
-
-        # Wait for Proxy to be ready
-        sleep 2
-
-        # Run Migration (use double quotes to expand secrets, which also safely contains the & for connect_timeout)
-        export DATABASE_URL="postgresql://$${DB_USER}:$${DB_PASS}@localhost/postgres?host=/cloudsql/drivepro-production:europe-west4:drivepro-db-main&connect_timeout=300"
+        export DATABASE_URL='postgresql://$${DB_USER}:$${DB_PASS}@localhost/postgres?host=/cloudsql/drivepro-production:europe-west4:drivepro-db-main'
         npm ci
         cd packages/database
         npx prisma migrate deploy
-
-        # Kill Proxy
-        kill $_PROXY_PID
     secretEnv: ['DB_USER', 'DB_PASS']
-    waitFor: ['push-admin-latest']
+    waitFor: ['start-proxy']
     volumes:
       - name: 'cloudsql'
         path: '/cloudsql'
