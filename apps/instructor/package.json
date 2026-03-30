@@ -24,5 +24,6 @@
     "@types/socket.io-client": "^1.4.36",
     "typescript": "~5.9.2"
   },
-  "private": true
+  "private": true,
+  "type": "module"
 }
