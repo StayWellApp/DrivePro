@@ -37,6 +37,8 @@ app.post('/lessons/:id/heartbeat', async (req: Request, res: Response): Promise<
       // Find the active LessonSession for this lesson
       const activeSession = await prisma.lessonSession.findFirst({
         where: {
+          lesson_id: lessonId as string,
+          school_id: school_id
           lesson_id: lessonId,
           school_id: school_id as string
         },
