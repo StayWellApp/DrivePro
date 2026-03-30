@@ -56,11 +56,11 @@ steps:
         sleep 2
 
         # Run Migration
-        export DATABASE_URL="postgresql://$$DB_USER:$$DB_PASS@localhost/$$DB_NAME?host=/cloudsql/drivepro-production:europe-west4:drivepro-db-main"
+        export DATABASE_URL="postgresql://$${DB_USER}:$${DB_PASS}@localhost/postgres?host=/cloudsql/drivepro-production:europe-west4:drivepro-db-main"
         npm ci
         cd packages/database
         npx prisma migrate deploy
-    secretEnv: ['DB_USER', 'DB_PASS', 'DB_NAME']
+    secretEnv: ['DB_USER', 'DB_PASS']
     waitFor: ['start-proxy']
     volumes:
       - name: 'cloudsql'
@@ -94,8 +94,6 @@ availableSecrets:
       env: 'DB_USER'
     - versionName: projects/drivepro-production/secrets/DB_PASS/versions/latest
       env: 'DB_PASS'
-    - versionName: projects/drivepro-production/secrets/DB_NAME/versions/latest
-      env: 'DB_NAME'
 
 options:
   logging: CLOUD_LOGGING_ONLY
