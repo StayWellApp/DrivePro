@@ -46,6 +46,8 @@ steps:
       - |
         # Force construct the URL and pass it directly to the --url flag
         export DB_URL="postgresql://$${DB_USER}:$${DB_PASS}@localhost/postgres?host=/cloudsql/drivepro-production:europe-west4:drivepro-db-main"
+        # DEBUG: Add this echo so we can see the resolved URL in the logs!
+        echo "Resolving to URL: $${DB_URL}"
         npm ci
         cd packages/database
         npx prisma migrate deploy --url="$$DB_URL"
