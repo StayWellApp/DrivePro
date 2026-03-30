@@ -5,6 +5,8 @@ const withNextIntl = createNextIntlPlugin(
 );
 
 /** @type {import('next').NextConfig} */
-const nextConfig = {};
+const nextConfig = {
+  transpilePackages: ["@repo/database"],
+};
 
 export default withNextIntl(nextConfig);

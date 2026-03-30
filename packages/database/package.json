@@ -6,14 +6,13 @@
   "type": "module",
   "types": "./index.ts",
   "scripts": {
-    "build": "tsc --noEmit",
+    "build": "tsc",
     "check-types": "tsc --noEmit",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "module",
   "devDependencies": {
     "@repo/typescript-config": "*",
     "@types/node": "^20",
