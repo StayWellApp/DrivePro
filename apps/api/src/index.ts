@@ -3,7 +3,7 @@ import express, { Request, Response } from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
-import { prisma } from 'database';
+import { prisma } from '@repo/database';
 
 const app = express();
 const server = createServer(app);
@@ -36,8 +36,8 @@ app.post('/lessons/:id/heartbeat', async (req: Request, res: Response): Promise<
       // Find the active LessonSession for this lesson
       const activeSession = await prisma.lessonSession.findFirst({
         where: {
-          lesson_id: lessonId,
-          school_id: school_id
+          lesson_id: lessonId as string,
+          school_id: school_id as string
         },
         orderBy: {
           createdAt: 'desc'

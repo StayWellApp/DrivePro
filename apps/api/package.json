@@ -23,9 +23,9 @@
     "typescript": "^5.9.2"
   },
   "dependencies": {
+    "@repo/database": "*",
     "@repo/schema": "^1.0.0",
     "cors": "^2.8.6",
-    "database": "^1.0.0",
     "express": "^5.2.1",
     "socket.io": "^4.8.3"
   }

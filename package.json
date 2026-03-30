@@ -2,7 +2,7 @@
   "name": "with-tailwind",
   "private": true,
   "version": "1.0.0",
-  "type": "module",
+  "type": "commonjs",
   "scripts": {
     "build": "turbo run build",
     "postinstall": "prisma generate --schema=packages/database/prisma/schema.prisma",
@@ -27,7 +27,6 @@
     "apps/*",
     "packages/*"
   ],
-  "version": "1.0.0",
   "description": "This Turborepo starter is maintained by the Turborepo core team.",
   "main": "index.js",
   "dependencies": {
@@ -272,6 +271,7 @@
     "which-builtin-type": "^1.2.1",
     "which-collection": "^1.0.2",
     "which-typed-array": "^1.1.20",
+    "wkx": "^0.5.0",
     "word-wrap": "^1.2.5",
     "yocto-queue": "^0.1.0"
   },
@@ -282,7 +282,6 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
   "bugs": {
     "url": "https://github.com/StayWellApp/DrivePro/issues"
   },
