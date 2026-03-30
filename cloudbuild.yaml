@@ -56,7 +56,7 @@ steps:
         sleep 2
 
         # Run Migration
-        export DATABASE_URL="postgresql://$${DB_USER}:$${DB_PASS}@localhost/postgres?host=/cloudsql/drivepro-production:europe-west4:drivepro-db-main"
+        export DATABASE_URL="postgresql://$${DB_USER}:$${DB_PASS}@localhost/postgres?host=/cloudsql/drivepro-production:europe-west4:drivepro-db-main&connect_timeout=300"
         npm ci
         cd packages/database
         npx prisma migrate deploy
