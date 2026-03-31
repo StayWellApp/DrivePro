@@ -31,11 +31,8 @@ steps:
   # Step 1: The Provider (Starts the Proxy)
   - name: 'gcr.io/cloud-builders/docker'
     id: start-proxy
-    args: ['run', '-d', '--name=cloud-sql-proxy', '-v', 'cloudsql:/cloudsql', 'gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.8.1', '--unix-socket=/cloudsql', 'drivepro-production:europe-west4:drivepro-db-main']
+    args: ['run', '-d', '--name=cloud-sql-proxy', '-v', '/workspace/cloudsql:/cloudsql', 'gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.8.1', '--unix-socket=/cloudsql', 'drivepro-production:europe-west4:drivepro-db-main']
     waitFor: ['push-admin-latest']
-    volumes:
-      - name: 'cloudsql'
-        path: '/cloudsql'
 
   # Step 2: The Consumer (Runs the Migration)
   - name: 'gcr.io/cloud-builders/npm'
@@ -45,8 +42,8 @@ steps:
       - '-c'
       - |
         # Create a symlink to completely bypass Prisma's colon-parsing bug in the host parameter
-        ln -s /cloudsql/drivepro-production:europe-west4:drivepro-db-main /cloudsql/mydb
-        export DATABASE_URL="postgresql://$${DB_USER}:$${DB_PASS}@localhost/postgres?host=/cloudsql/mydb"
+        ln -s /workspace/cloudsql/drivepro-production:europe-west4:drivepro-db-main /workspace/cloudsql/mydb
+        export DATABASE_URL="postgresql://$${DB_USER}:$${DB_PASS}@localhost/postgres?host=/workspace/cloudsql/mydb"
         # DEBUG: Add this echo so we can see the resolved URL in the logs!
         echo "Resolving to URL: $${DATABASE_URL}"
         npm ci
@@ -54,9 +51,6 @@ steps:
         npx prisma migrate deploy
     secretEnv: ['DB_USER', 'DB_PASS']
     waitFor: ['start-proxy']
-    volumes:
-      - name: 'cloudsql'
-        path: '/cloudsql'
 
   # 5. Deploy to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
