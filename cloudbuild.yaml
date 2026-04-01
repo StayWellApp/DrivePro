@@ -41,14 +41,10 @@ steps:
     args:
       - '-c'
       - |
-        # Give the proxy a few seconds to start up and create the socket file
         sleep 5
-        # Create a symlink to completely bypass Prisma's colon-parsing bug in the host parameter
-        ln -s /workspace/cloudsql/drivepro-production:europe-west4:drivepro-db-main /workspace/cloudsql/mydb
-        # Put the URL-encoded socket path directly in the HOST portion of the URL to prevent localhost fallback
-        export DATABASE_URL="postgresql://$${DB_USER}:$${DB_PASS}@%2Fworkspace%2Fcloudsql%2Fmydb/postgres"
-        # DEBUG: Add this echo so we can see the resolved URL in the logs!
-        echo "Resolving to URL: $${DATABASE_URL}"
+        # Use the standard socket directory
+        export DATABASE_URL="postgresql://$${DB_USER}:$${DB_PASS}@localhost/postgres?host=/workspace/cloudsql/drivepro-production:europe-west4:drivepro-db-main"
+        echo "Connecting to database..."
         npm ci
         cd packages/database
         npx prisma migrate deploy
