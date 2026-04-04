@@ -205,6 +205,32 @@ export function ActiveLessonScreen() {
           </TouchableOpacity>
         ))}
       </View>
+
+      <TouchableOpacity
+        style={styles.syncButton}
+        onPress={async () => {
+          const timestamp = new Date().toISOString();
+          try {
+            const response = await fetch(`${API_URL}/lessons/${MOCK_LESSON_ID}/sync-dashcam`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                school_id: MOCK_SCHOOL_ID,
+                dashcam_start_time: timestamp,
+              }),
+            });
+            if (response.ok) {
+              Alert.alert('Success', 'Dashcam synced successfully.');
+            } else {
+              Alert.alert('Error', 'Failed to sync dashcam.');
+            }
+          } catch (error) {
+            Alert.alert('Error', 'Network error while syncing dashcam.');
+          }
+        }}
+      >
+        <Text style={styles.buttonText}>Sync Dashcam</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -253,5 +279,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     textAlign: 'center',
+  },
+  syncButton: {
+    backgroundColor: '#4a90e2',
+    padding: 16,
+    borderRadius: 8,
+    marginTop: 20,
+    alignItems: 'center',
   },
 });

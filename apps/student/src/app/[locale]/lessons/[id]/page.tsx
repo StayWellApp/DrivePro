@@ -10,6 +10,7 @@ interface FaultPin {
   notes: string | null;
   lat: number;
   lng: number;
+  video_offset_seconds: number | null;
 }
 
 export default async function LessonDetailPage({
@@ -67,20 +68,38 @@ export default async function LessonDetailPage({
 
   let faults: FaultPin[] = [];
   try {
-    const faultData: any[] = await prisma.$queryRaw`
-      SELECT id, category, notes, ST_Y(location::geometry) as lat, ST_X(location::geometry) as lng
-      FROM "FaultPin"
-      WHERE lesson_id = ${id};
-    `;
-    faults = faultData.map((f) => ({
+    // If PostGIS is not available or location is lat/lng fields
+    const faultData = await prisma.faultPin.findMany({
+      where: {
+        lessonSession: {
+          lesson_id: id,
+        },
+      },
+    });
+
+    faults = faultData.map((f: any) => ({
       id: f.id,
       category: f.category,
-      notes: f.notes,
-      lat: f.lat,
-      lng: f.lng,
+      notes: f.notes || null,
+      lat: f.latitude,
+      lng: f.longitude,
+      video_offset_seconds: f.video_offset_seconds,
     }));
   } catch (error) {
     console.error("Error fetching FaultPins:", error);
+  }
+
+  let videoUrl = "";
+  try {
+    const session = await prisma.lessonSession.findFirst({
+      where: { lesson_id: id },
+      orderBy: { createdAt: "desc" },
+    });
+    if (session?.video_file_name) {
+      videoUrl = `https://storage.googleapis.com/drivepro-videos/${session.video_file_name}`;
+    }
+  } catch (error) {
+    console.error("Error fetching video session:", error);
   }
 
   // Calculate distance based on route if we have one
@@ -165,7 +184,7 @@ export default async function LessonDetailPage({
         <h2 className="text-xl font-semibold mb-4 text-zinc-800 dark:text-zinc-200">
           {t("mapRoute")}
         </h2>
-        <LessonMapWrapper route={routeCoordinates} faults={faults} />
+        <LessonMapWrapper route={routeCoordinates} faults={faults} videoUrl={videoUrl} />
       </section>
 
       {/* Faults Summary Detail */}
