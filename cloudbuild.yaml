@@ -70,10 +70,14 @@ steps:
         ENCODED_USER=$(node -e "console.log(encodeURIComponent(process.env.DB_USER))")
         ENCODED_PASS=$(node -e "console.log(encodeURIComponent(process.env.DB_PASS))")
         
+        # Enable strict error handling
+        set -e
+        
         # Connect to Unix Socket with host parameter pointing to the directory
         export DATABASE_URL="postgresql://$${ENCODED_USER}:$${ENCODED_PASS}@localhost/postgres?host=/workspace/cloudsql/mydb"
         
-        npm ci
+        # Retry npm ci if it fails due to transient network issues (ECONNRESET)
+        npm ci || npm ci
         cd packages/database
         npx prisma db push
     secretEnv: ['DB_USER', 'DB_PASS']
