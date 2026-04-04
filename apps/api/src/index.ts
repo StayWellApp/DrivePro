@@ -4,10 +4,10 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
 import { prisma } from '@repo/database';
-import { generatePdf, ReportData } from './services/pdfGenerator';
-import { handleStripeWebhook, createCheckoutSession } from './services/stripe';
+import { generatePdf, ReportData } from './services/pdfGenerator.js';
+import { handleStripeWebhook, createCheckoutSession } from './services/stripe.js';
 import cron from 'node-cron';
-import { sendLessonReminder } from './services/notifications';
+import { sendLessonReminder } from './services/notifications.js';
 import multer from 'multer';
 
 const app = express();

@@ -71,6 +71,16 @@ export default function Shell({
             <span className="material-symbols-outlined mr-3 text-xl">help</span>
             <span className="text-xs font-semibold">Support</span>
           </Link>
+        <div className="p-8 bg-primary-container/50">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-secondary-container/30 flex items-center justify-center text-secondary font-bold">
+              JD
+            </div>
+            <div>
+              <p className="text-sm font-bold">John Doe</p>
+              <p className="text-xs text-white/50">Admin</p>
+            </div>
+          </div>
         </div>
       </aside>
 
