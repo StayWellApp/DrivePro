@@ -103,16 +103,12 @@
     "categoryC": "Category C (Trucks)",
     "registerButton": "Register Student"
   },
-  "TopUp": {
+  "TopupPage": {
     "title": "Top-up Balance",
     "description": "Add funds to your account to pay for lessons.",
     "selectAmount": "Select Amount",
     "customAmount": "Custom Amount",
-    "payButton": "Pay with Stripe",
-    "amountLabel": "Amount (CZK)",
-    "processing": "Processing...",
-    "submit": "Top-Up Now",
-    "balanceLabel": "Current Balance"
+    "payButton": "Pay with Stripe"
   },
   "Validations": {
     "required": "This field is required",
@@ -130,8 +126,7 @@
     "past": "Past Lessons",
     "noPast": "No past lessons found.",
     "completed": "Completed",
-    "viewReplay": "View Lesson Replay",
-    "bookLesson": "Book New Lesson"
+    "viewReplay": "View Lesson Replay"
   },
   "LessonDetail": {
     "backToList": "Back to Lessons",
@@ -150,9 +145,7 @@
     "closeIntelligence": "CLOSE INTELLIGENCE",
     "start": "Start",
     "end": "End",
-    "replayAnalysis": "Replay sequence & analysis available",
-    "aiTip": "AI Insight",
-    "dashcamLink": "Jump to Dashcam"
+    "replayAnalysis": "Replay sequence & analysis available"
   },
   "Fleet": {
     "title": "Fleet Management",
@@ -164,18 +157,5 @@
     "statusOk": "Healthy",
     "statusWarning": "Maintenance Due",
     "statusOverdue": "Overdue"
-  },
-  "Finances": {
-    "title": "Finances",
-    "totalEarnings": "Total Earnings",
-    "stripeStatus": "Stripe Status",
-    "connected": "Connected",
-    "pending": "Pending",
-    "recentPayments": "Recent Payments",
-    "student": "Student",
-    "amount": "Amount",
-    "date": "Date",
-    "status": "Status",
-    "noPayments": "No payments found."
   }
 }

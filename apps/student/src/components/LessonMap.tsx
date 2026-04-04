@@ -218,7 +218,7 @@ export default function LessonMap({ route, faults, videoUrl }: LessonMapProps) {
       <IntelligencePane
         isVisible={!!activeFault}
         onClose={() => setActiveFault(null)}
-        fault={activeFault} onSeek={seekVideo}
+        fault={activeFault}
       />
     </div>
   );

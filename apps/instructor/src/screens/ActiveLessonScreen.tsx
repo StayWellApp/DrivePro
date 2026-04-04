@@ -1,54 +1,54 @@
 import React, { useState, useEffect } from 'react';
-import {
-  StyleSheet,
-  View,
-  Text,
-  TouchableOpacity,
-  SafeAreaView,
-  ScrollView,
-  Alert,
-  Modal,
-} from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Alert, SafeAreaView, ScrollView } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
-import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import io from 'socket.io-client';
 
-const COLORS = {
-  primary: '#0F172A',
-  secondary: '#2DD4BF',
-  surface: '#F7F9FB',
-  white: '#FFFFFF',
-  textVariant: '#64748B',
-  major: '#EF4444',
-};
-
 const FAULT_CATEGORIES = [
   'Observation',
-  'Signalling',
+  'Junctions',
+  'Roundabouts',
+  'Parking',
   'Speed',
   'Positioning',
-  'Control',
-  'Judgment',
+  'Signalling',
 ];
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://10.0.2.2:8080';
+// Kinetic Precision Colors
+const COLORS = {
+  primary: '#0F172A', // Deep Navy
+  secondary: '#2DD4BF', // Electric Teal
+  surface: '#F7F9FB',
+  major: '#EF4444', // Red
+  minor: '#2DD4BF', // Teal (Electric Teal)
+  textMain: '#191C1E',
+  textVariant: '#45464D',
+  white: '#FFFFFF',
+};
+
 const MOCK_LESSON_ID = 'lesson-123';
 const MOCK_SCHOOL_ID = 'school-456';
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://10.0.2.2:8080';
 const FAULT_QUEUE_KEY = '@fault_queue';
 
 const socket = io(API_URL);
+const BACKGROUND_LOCATION_TASK = 'BACKGROUND_LOCATION_TASK';
 
-TaskManager.defineTask('BACKGROUND_LOCATION_TASK', async ({ data, error }: any) => {
+TaskManager.defineTask(BACKGROUND_LOCATION_TASK, async ({ data, error }: any) => {
   if (error) {
-    console.error(error);
+    console.error('Background location task error:', error);
     return;
   }
   if (data) {
     const { locations } = data;
     const location = locations[0];
     if (location) {
+      // In a real app, we would queue this for heartbeat sync
+      console.log('Background location received:', location.coords);
+
+      // Attempt to send a minimal heartbeat if possible
       try {
         await fetch(`${API_URL}/lessons/${MOCK_LESSON_ID}/heartbeat`, {
           method: 'POST',
@@ -72,13 +72,6 @@ export function ActiveLessonScreen() {
   const [isSocketConnected, setIsSocketConnected] = useState(socket.connected);
   const [hasLocationPermission, setHasLocationPermission] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(FAULT_CATEGORIES[0]);
-  const [isVehicleModalVisible, setIsVehicleModalVisible] = useState(true);
-  const [selectedVehicle, setSelectedVehicle] = useState<string | null>(null);
-
-  const MOCK_VEHICLES = [
-    { id: 'veh-1', name: 'Skoda Octavia (1AB 1234)' },
-    { id: 'veh-2', name: 'VW Golf (2CD 5678)' },
-  ];
 
   useEffect(() => {
     socket.on('connect', () => {
@@ -191,7 +184,6 @@ export function ActiveLessonScreen() {
     const faultPin = {
       category: selectedCategory,
       type,
-      notes: `Automatic log for ${selectedCategory} (${type})`,
       timestamp: new Date().toISOString(),
       location: {
         latitude: location.coords.latitude,
@@ -237,72 +229,12 @@ export function ActiveLessonScreen() {
     }
   };
 
-  const handleEndLesson = async () => {
-    Alert.alert(
-      'End Lesson',
-      'Are you sure you want to finish this lesson? A report will be sent to the student.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'End Lesson',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              const response = await fetch(`${API_URL}/lessons/${MOCK_LESSON_ID}/finish`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  school_id: MOCK_SCHOOL_ID,
-                }),
-              });
-              if (response.ok) {
-                Alert.alert('Success', 'Lesson finished and report sent.');
-              } else {
-                throw new Error('Failed to end lesson');
-              }
-            } catch (e) {
-              Alert.alert('Error', 'Failed to end lesson.');
-            }
-          }
-        },
-      ]
-    );
-  };
-
   return (
     <SafeAreaView style={styles.safeArea}>
-      <Modal visible={isVehicleModalVisible} animationType="slide">
-        <SafeAreaView style={styles.modalContainer}>
-          <Text style={styles.modalTitle}>VEHICLE CHECK-IN</Text>
-          <Text style={styles.modalSubtitle}>Select your vehicle for today's session</Text>
-          <View style={styles.vehicleList}>
-            {MOCK_VEHICLES.map((v) => (
-              <TouchableOpacity
-                key={v.id}
-                style={styles.vehicleCard}
-                onPress={() => {
-                  setSelectedVehicle(v.name);
-                  setIsVehicleModalVisible(false);
-                }}
-              >
-                <Text style={styles.vehicleName}>{v.name}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </SafeAreaView>
-      </Modal>
-
       <View style={styles.container}>
         <View style={styles.header}>
-          <View>
-            <Text style={styles.title}>ACTIVE LESSON</Text>
-            <Text style={styles.subtitle}>Session: #L-12345</Text>
-          </View>
-          {selectedVehicle && (
-             <View style={styles.vehicleBadge}>
-                <Text style={styles.vehicleBadgeText}>{selectedVehicle}</Text>
-             </View>
-          )}
+          <Text style={styles.title}>ACTIVE LESSON</Text>
+          <Text style={styles.subtitle}>Session: #L-12345</Text>
         </View>
 
         <View style={styles.categorySelector}>
@@ -348,39 +280,30 @@ export function ActiveLessonScreen() {
         </View>
 
         <View style={styles.footer}>
-          <View style={styles.footerButtons}>
-            <TouchableOpacity
-              style={styles.dashcamButton}
-              onPress={async () => {
-                try {
-                  const response = await fetch(`${API_URL}/lessons/${MOCK_LESSON_ID}/sync-dashcam`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                      school_id: MOCK_SCHOOL_ID,
-                      dashcam_start_time: new Date().toISOString()
-                    }),
-                  });
-                  if (response.ok) {
-                    Alert.alert('Success', 'Dashcam sync point captured.');
-                  } else {
-                    throw new Error('Sync failed');
-                  }
-                } catch (e) {
-                  Alert.alert('Error', 'Failed to sync dashcam.');
+          <TouchableOpacity
+            style={styles.dashcamButton}
+            onPress={async () => {
+              try {
+                const response = await fetch(`${API_URL}/lessons/${MOCK_LESSON_ID}/sync-dashcam`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    school_id: MOCK_SCHOOL_ID,
+                    dashcam_start_time: new Date().toISOString()
+                  }),
+                });
+                if (response.ok) {
+                  Alert.alert('Success', 'Dashcam sync point captured.');
+                } else {
+                  throw new Error('Sync failed');
                 }
-              }}
-            >
-              <Text style={styles.dashcamButtonText}>SYNC DASHCAM</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.endLessonButton}
-              onPress={handleEndLesson}
-            >
-              <Text style={styles.endLessonButtonText}>END LESSON</Text>
-            </TouchableOpacity>
-          </View>
+              } catch (e) {
+                Alert.alert('Error', 'Failed to sync dashcam.');
+              }
+            }}
+          >
+            <Text style={styles.dashcamButtonText}>SYNC DASHCAM</Text>
+          </TouchableOpacity>
         </View>
       </View>
     </SafeAreaView>
@@ -399,9 +322,6 @@ const styles = StyleSheet.create({
   header: {
     marginBottom: 40,
     marginTop: 20,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
   },
   title: {
     fontSize: 42,
@@ -415,17 +335,6 @@ const styles = StyleSheet.create({
     color: COLORS.textVariant,
     letterSpacing: 2,
     marginTop: 4,
-  },
-  vehicleBadge: {
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  vehicleBadgeText: {
-    color: COLORS.white,
-    fontSize: 10,
-    fontWeight: '900',
   },
   categorySelector: {
     marginBottom: 32,
@@ -484,13 +393,9 @@ const styles = StyleSheet.create({
     lineHeight: 64,
   },
   footer: {
-  },
-  footerButtons: {
-    flexDirection: 'row',
     gap: 16,
   },
   dashcamButton: {
-    flex: 1,
     backgroundColor: COLORS.primary,
     padding: 24,
     borderRadius: 24,
@@ -498,57 +403,8 @@ const styles = StyleSheet.create({
   },
   dashcamButtonText: {
     color: COLORS.white,
-    fontSize: 14,
-    fontWeight: '900',
-    letterSpacing: 1,
-  },
-  endLessonButton: {
-    flex: 1,
-    backgroundColor: COLORS.white,
-    padding: 24,
-    borderRadius: 24,
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: COLORS.major,
-  },
-  endLessonButtonText: {
-    color: COLORS.major,
-    fontSize: 14,
-    fontWeight: '900',
-    letterSpacing: 1,
-  },
-  modalContainer: {
-    flex: 1,
-    padding: 40,
-    backgroundColor: COLORS.surface,
-  },
-  modalTitle: {
-    fontSize: 32,
-    fontWeight: '900',
-    color: COLORS.primary,
-    marginBottom: 8,
-  },
-  modalSubtitle: {
     fontSize: 16,
-    color: COLORS.textVariant,
-    marginBottom: 40,
-  },
-  vehicleList: {
-    gap: 16,
-  },
-  vehicleCard: {
-    backgroundColor: COLORS.white,
-    padding: 24,
-    borderRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 2,
-  },
-  vehicleName: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: COLORS.primary,
+    fontWeight: '900',
+    letterSpacing: 2,
   },
 });

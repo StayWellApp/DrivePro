@@ -5,7 +5,6 @@ import { getTranslations } from "next-intl/server";
 export default async function LessonsPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "LessonsList" });
-  const tTopUp = await getTranslations({ locale, namespace: "TopUp" });
 
   // TODO: Get actual logged-in student ID from session/auth
   // For demonstration, we'll fetch the first student available in the DB
@@ -15,7 +14,6 @@ export default async function LessonsPage({ params }: { params: Promise<{ locale
   } catch(e) {}
 
   const studentId = firstStudent?.id || "mock-student-id";
-  const balance = firstStudent?.balance || 0;
 
   let lessons: any[] = [];
   try {
@@ -51,17 +49,6 @@ export default async function LessonsPage({ params }: { params: Promise<{ locale
           {t("title")}
         </h1>
         <p className="text-zinc-500">{t("description")}</p>
-        <div className="mt-4 flex items-center justify-between">
-          <div className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            {tTopUp("balanceLabel")}: <span className="text-indigo-600 font-bold">{balance} CZK</span>
-          </div>
-          <button
-            disabled={balance <= 0}
-            className="px-6 py-2 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-          >
-            {t("bookLesson")}
-          </button>
-        </div>
       </header>
 
       {/* Upcoming Lessons */}
