@@ -103,12 +103,16 @@
     "categoryC": "Skupina C (Nákladní Automobily)",
     "registerButton": "Registrovat Studenta"
   },
-  "TopupPage": {
-    "title": "Dobití Kreditu",
-    "description": "Přidejte prostředky na svůj účet pro platbu za lekce.",
-    "selectAmount": "Vyberte Částku",
-    "customAmount": "Vlastní Částka",
-    "payButton": "Zaplatit kartou"
+  "TopUp": {
+    "title": "Dobití kreditu",
+    "description": "Přidejte prostředky na svůj účet k úhradě lekcí.",
+    "selectAmount": "Vyberte částku",
+    "customAmount": "Vlastní částka",
+    "payButton": "Zaplatit přes Stripe",
+    "amountLabel": "Částka (CZK)",
+    "processing": "Zpracování...",
+    "submit": "Dobít kredit",
+    "balanceLabel": "Aktuální zůstatek"
   },
   "Validations": {
     "required": "Toto pole je povinné",
@@ -126,7 +130,8 @@
     "past": "Minulé Lekce",
     "noPast": "Žádné minulé lekce nebyly nalezeny.",
     "completed": "Dokončeno",
-    "viewReplay": "Zobrazit Záznam Lekce"
+    "viewReplay": "Zobrazit záznam lekce",
+    "bookLesson": "Rezervovat novou lekci"
   },
   "LessonDetail": {
     "backToList": "Zpět na Seznam",
@@ -146,6 +151,12 @@
     "start": "Začátek",
     "end": "Konec",
     "replayAnalysis": "Analýza záznamu k dispozici"
+    "closeIntelligence": "ZAVŘÍT INTELIGENCI",
+    "start": "Start",
+    "end": "Cíl",
+    "replayAnalysis": "K dispozici je přehrání sekvence a analýza",
+    "aiTip": "AI Tip",
+    "dashcamLink": "Přejít na palubní kameru"
   },
   "Fleet": {
     "title": "Správa Vozového Parku",
@@ -153,9 +164,22 @@
     "stkExpiry": "Platnost STK",
     "viewDocuments": "Dokumenty",
     "edit": "Upravit",
-    "noVehicles": "Žádná vozidla nenalezena.",
-    "statusOk": "V Pořádku",
-    "statusWarning": "Blíží se Servis",
-    "statusOverdue": "Po Termínu"
+    "noVehicles": "Žádná vozidla nebyla nalezena.",
+    "statusOk": "V pořádku",
+    "statusWarning": "Blížící se údržba",
+    "statusOverdue": "Servis po termínu"
+  },
+  "Finances": {
+    "title": "Finance",
+    "totalEarnings": "Celkové výdělky",
+    "stripeStatus": "Stav Stripe",
+    "connected": "Připojeno",
+    "pending": "Čeká na vyřízení",
+    "recentPayments": "Nedávné platby",
+    "student": "Student",
+    "amount": "Částka",
+    "date": "Datum",
+    "status": "Stav",
+    "noPayments": "Nebyly nalezeny žádné platby."
   }
 }
