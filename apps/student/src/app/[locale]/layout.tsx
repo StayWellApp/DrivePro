@@ -28,9 +28,6 @@ export default async function RootLayout({
         />
       </head>
       <body className="bg-surface text-on-surface min-h-screen flex font-['Plus_Jakarta_Sans',sans-serif]">
-    <html lang={locale ?? 'en'}>
-      <body className="antialiased min-h-screen bg-zinc-950">
-        <div className="fixed top-0 left-0 right-0 h-1 bg-secondary z-[2000] animate-pulse shadow-[0_0_15px_rgba(45,212,191,0.5)]" />
         <NextIntlClientProvider messages={messages}>
           {/* SideNavBar */}
           <aside className="h-screen w-64 fixed left-0 top-0 bg-slate-100 dark:bg-slate-900 flex flex-col h-full py-6 z-40 hidden md:flex">
