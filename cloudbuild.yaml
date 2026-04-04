@@ -91,6 +91,8 @@ steps:
       - 'europe-west4-docker.pkg.dev/drivepro-production/drivepro-repo/admin:$COMMIT_SHA'
       - '--region'
       - 'europe-west4'
+      - '--service-account'
+      - 'drivepro-backend-sa@drivepro-production.iam.gserviceaccount.com'
       - '--set-env-vars'
       - 'NEXT_PUBLIC_DEFAULT_LOCALE=cs'
       - '--set-secrets'
