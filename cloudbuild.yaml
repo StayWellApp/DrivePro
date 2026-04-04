@@ -51,20 +51,20 @@ steps:
         echo "Waiting for Cloud SQL proxy socket..."
         SOCKET_DIR="/workspace/cloudsql/drivepro-production:europe-west4:drivepro-db-main"
         for i in {1..20}; do
-          if [ -S "$SOCKET_DIR/.s.PGSQL.5432" ]; then
+          if [ -S "$$SOCKET_DIR/.s.PGSQL.5432" ]; then
             echo "Proxy socket found!"
             break
           fi
           sleep 1
         done
         
-        if [ ! -S "$SOCKET_DIR/.s.PGSQL.5432" ]; then
+        if [ ! -S "$$SOCKET_DIR/.s.PGSQL.5432" ]; then
           echo "ERROR: Cloud SQL proxy socket was not created! Proxy likely failed to authenticate."
           exit 1
         fi
         
         # Create a symlink to completely bypass Prisma's colon-parsing bug in the host parameter
-        ln -s "$SOCKET_DIR" /workspace/cloudsql/mydb
+        ln -s "$$SOCKET_DIR" /workspace/cloudsql/mydb
         
         # URL encode credentials because DB_PASS contains special characters
         ENCODED_USER=$(node -e "console.log(encodeURIComponent(process.env.DB_USER))")
