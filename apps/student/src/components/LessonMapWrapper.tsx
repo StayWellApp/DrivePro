@@ -9,11 +9,13 @@ interface FaultPin {
   notes: string | null;
   lat: number;
   lng: number;
+  video_offset_seconds: number | null;
 }
 
 interface LessonMapProps {
   route: [number, number][]; // Array of [lat, lng]
   faults: FaultPin[];
+  videoUrl?: string;
 }
 
 const DynamicLessonMap = dynamic(() => import('./LessonMap'), { ssr: false });

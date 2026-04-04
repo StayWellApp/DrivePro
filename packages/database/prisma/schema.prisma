@@ -11,10 +11,11 @@ datasource db {
 }
 
 model School {
-  id        String   @id @default(uuid())
-  name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                String   @id @default(uuid())
+  name              String
+  stripe_account_id String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   students    Student[]
   instructors Instructor[]
@@ -24,18 +25,20 @@ model School {
 }
 
 model Student {
-  id         String   @id @default(uuid())
-  school_id  String
-  school     School   @relation(fields: [school_id], references: [id])
-  name       String
-  email      String
-  balance    Float    @default(0)
-  courseType CourseType
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id                 String   @id @default(uuid())
+  school_id          String
+  school             School   @relation(fields: [school_id], references: [id])
+  name               String
+  email              String
+  balance            Float    @default(0)
+  courseType         CourseType
+  stripe_customer_id String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
-  lessons  Lesson[]
-  payments Payment[]
+  lessons       Lesson[]
+  payments      Payment[]
+  theoryResults TheoryResult[]
 }
 
 enum CourseType {
@@ -58,15 +61,18 @@ model Instructor {
 }
 
 model Vehicle {
-  id           String   @id @default(uuid())
-  school_id    String
-  school       School   @relation(fields: [school_id], references: [id])
-  licensePlate String
-  make         String
-  model        String
+  id                 String    @id @default(uuid())
+  school_id          String
+  school             School    @relation(fields: [school_id], references: [id])
+  licensePlate       String
+  make               String
+  model              String
+  nextServiceDate    DateTime?
+  nextServiceMileage Int?
+  stk_expiry         DateTime?
   //location     Unsupported("geography(Point, 4326)")?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
   lessons Lesson[]
 }
@@ -90,27 +96,31 @@ model Lesson {
 }
 
 model LessonSession {
-  id        String   @id @default(uuid())
-  school_id String
-  lesson_id String
-  lesson    Lesson   @relation(fields: [lesson_id], references: [id])
+  id                 String    @id @default(uuid())
+  school_id          String
+  lesson_id          String
+  lesson             Lesson    @relation(fields: [lesson_id], references: [id])
+  video_file_name    String?
+  dashcam_start_time DateTime?
   //gps_route Unsupported("geography(LineString, 4326)")?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
   faultPins FaultPin[]
 }
 
 model FaultPin {
-  id                String   @id @default(uuid())
-  school_id         String
-  lesson_session_id String
-  lessonSession     LessonSession @relation(fields: [lesson_session_id], references: [id])
-  category          String
-  latitude          Float
-  longitude         Float
-  timestamp         DateTime
-  createdAt         DateTime @default(now())
+  id                   String   @id @default(uuid())
+  school_id            String
+  lesson_session_id    String
+  lessonSession        LessonSession @relation(fields: [lesson_session_id], references: [id])
+  category             String
+  latitude             Float
+  longitude            Float
+  timestamp            DateTime
+  video_file_name      String?
+  video_offset_seconds Int?
+  createdAt            DateTime @default(now())
 }
 
 model Payment {
@@ -123,4 +133,23 @@ model Payment {
   status     String
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+}
+
+model TheoryQuestion {
+  id        String   @id @default(uuid())
+  question  String
+  options   Json
+  answer    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model TheoryResult {
+  id         String   @id @default(uuid())
+  student_id String
+  student    Student  @relation(fields: [student_id], references: [id])
+  score      Int
+  total      Int
+  mode       String // 'practice' or 'mock'
+  createdAt  DateTime @default(now())
 }
