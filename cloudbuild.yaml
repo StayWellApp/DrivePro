@@ -75,7 +75,7 @@ steps:
         
         npm ci
         cd packages/database
-        npx prisma migrate deploy
+        npx prisma db push
     secretEnv: ['DB_USER', 'DB_PASS']
     waitFor: ['start-proxy']
 
