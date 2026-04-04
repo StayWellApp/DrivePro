@@ -15,7 +15,8 @@ export default async function RootLayout({
 
   return (
     <html lang={locale ?? 'en'}>
-      <body className="antialiased min-h-screen">
+      <body className="antialiased min-h-screen bg-zinc-950">
+        <div className="fixed top-0 left-0 right-0 h-1 bg-secondary z-[2000] animate-pulse shadow-[0_0_15px_rgba(45,212,191,0.5)]" />
         <NextIntlClientProvider messages={messages}>
           {children}
         </NextIntlClientProvider>
