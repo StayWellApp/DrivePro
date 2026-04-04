@@ -1,8 +1,7 @@
 "use client";
 
 import Shell from "./Shell";
-import { ObservatoryCard } from "@repo/ui/ObservatoryCard";
-import { DataChip } from "@repo/ui/DataChip";
+import { ObservatoryCard, DataChip } from "@repo/ui";
 
 export default function Dashboard() {
   const fleetData = [
