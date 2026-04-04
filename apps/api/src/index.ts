@@ -130,7 +130,33 @@ app.post('/lessons/:id/heartbeat', async (req: Request, res: Response): Promise<
     return res.status(400).json({ error: 'school_id is required' });
   }
 
-  // TODO: Save GPS route to DB via Database package
+  // Save GPS route to DB
+  try {
+    const activeSession = await prisma.lessonSession.findFirst({
+      where: {
+        lesson_id: lessonId,
+        school_id: school_id as string,
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+
+    if (activeSession) {
+      // PostGIS LineString requires at least 2 points.
+      // For the first point, we create a zero-length line with two identical points.
+      await prisma.$executeRaw`
+        UPDATE "LessonSession"
+        SET gps_route = CASE
+          WHEN gps_route IS NULL THEN ST_GeomFromText(${`LINESTRING(${coordinates.longitude} ${coordinates.latitude}, ${coordinates.longitude} ${coordinates.latitude})`}, 4326)
+          ELSE ST_AddPoint(gps_route::geometry, ST_MakePoint(${coordinates.longitude}, ${coordinates.latitude})::geometry)
+        END
+        WHERE id = ${activeSession.id}
+      `;
+    }
+  } catch (error) {
+    console.error('Error saving GPS route:', error);
+  }
 
   // Save FaultPins to DB
   if (faultPins && Array.isArray(faultPins) && faultPins.length > 0) {

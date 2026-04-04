@@ -10,6 +10,7 @@ interface FaultPin {
   lat: number;
   lng: number;
   video_offset_seconds: number | null;
+  riskScore: number | null;
 }
 
 interface LessonMapProps {

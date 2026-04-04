@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, Alert, SafeAreaView, ScrollView } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import * as Location from 'expo-location';
+import * as TaskManager from 'expo-task-manager';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import io from 'socket.io-client';
 
@@ -33,6 +34,39 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://10.0.2.2:8080';
 const FAULT_QUEUE_KEY = '@fault_queue';
 
 const socket = io(API_URL);
+const BACKGROUND_LOCATION_TASK = 'BACKGROUND_LOCATION_TASK';
+
+TaskManager.defineTask(BACKGROUND_LOCATION_TASK, async ({ data, error }: any) => {
+  if (error) {
+    console.error('Background location task error:', error);
+    return;
+  }
+  if (data) {
+    const { locations } = data;
+    const location = locations[0];
+    if (location) {
+      // In a real app, we would queue this for heartbeat sync
+      console.log('Background location received:', location.coords);
+
+      // Attempt to send a minimal heartbeat if possible
+      try {
+        await fetch(`${API_URL}/lessons/${MOCK_LESSON_ID}/heartbeat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            school_id: MOCK_SCHOOL_ID,
+            coordinates: {
+              latitude: location.coords.latitude,
+              longitude: location.coords.longitude,
+            },
+          }),
+        });
+      } catch (e) {
+        // Silently fail in background
+      }
+    }
+  }
+});
 
 export function ActiveLessonScreen() {
   const [isSocketConnected, setIsSocketConnected] = useState(socket.connected);
@@ -57,12 +91,30 @@ export function ActiveLessonScreen() {
 
   useEffect(() => {
     (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission Denied', 'Permission to access location was denied');
+      const { status: fgStatus } = await Location.requestForegroundPermissionsAsync();
+      if (fgStatus !== 'granted') {
+        Alert.alert('Permission Denied', 'Foreground location permission is required');
         return;
       }
+
+      const { status: bgStatus } = await Location.requestBackgroundPermissionsAsync();
+      if (bgStatus !== 'granted') {
+        console.warn('Background location permission denied');
+      }
+
       setHasLocationPermission(true);
+
+      // Start background location updates
+      await Location.startLocationUpdatesAsync('BACKGROUND_LOCATION_TASK', {
+        accuracy: Location.Accuracy.High,
+        timeInterval: 2000,
+        distanceInterval: 5,
+        foregroundService: {
+          notificationTitle: "DrivePro Active Tracking",
+          notificationBody: "Recording lesson telemetry...",
+          notificationColor: COLORS.secondary
+        }
+      });
     })();
   }, []);
 
@@ -109,10 +161,12 @@ export function ActiveLessonScreen() {
   };
 
   const handleFaultTap = async (type: 'major' | 'minor') => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    setTimeout(() => {
+    if (type === 'major') {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    }, 150);
+      setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy), 100);
+    } else {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    }
 
     if (!hasLocationPermission) {
       Alert.alert('Error', 'Location permission is required.');
@@ -228,7 +282,25 @@ export function ActiveLessonScreen() {
         <View style={styles.footer}>
           <TouchableOpacity
             style={styles.dashcamButton}
-            onPress={() => Alert.alert('Dashcam', 'Sync point set.')}
+            onPress={async () => {
+              try {
+                const response = await fetch(`${API_URL}/lessons/${MOCK_LESSON_ID}/sync-dashcam`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    school_id: MOCK_SCHOOL_ID,
+                    dashcam_start_time: new Date().toISOString()
+                  }),
+                });
+                if (response.ok) {
+                  Alert.alert('Success', 'Dashcam sync point captured.');
+                } else {
+                  throw new Error('Sync failed');
+                }
+              } catch (e) {
+                Alert.alert('Error', 'Failed to sync dashcam.');
+              }
+            }}
           >
             <Text style={styles.dashcamButtonText}>SYNC DASHCAM</Text>
           </TouchableOpacity>
