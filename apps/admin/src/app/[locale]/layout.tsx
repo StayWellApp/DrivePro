@@ -15,7 +15,7 @@ export default async function RootLayout({
 
   return (
     <html lang={locale ?? 'cs'}>
-      <body className="antialiased min-h-screen">
+      <body className="antialiased min-h-screen bg-surface">
         <NextIntlClientProvider messages={messages}>
           {children}
         </NextIntlClientProvider>
