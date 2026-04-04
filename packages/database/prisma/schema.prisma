@@ -70,6 +70,7 @@ model Vehicle {
   nextServiceDate    DateTime?
   nextServiceMileage Int?
   stk_expiry         DateTime?
+  current_mileage    Int       @default(0)
   //location     Unsupported("geography(Point, 4326)")?
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
@@ -102,7 +103,7 @@ model LessonSession {
   lesson             Lesson    @relation(fields: [lesson_id], references: [id])
   video_file_name    String?
   dashcam_start_time DateTime?
-  //gps_route Unsupported("geography(LineString, 4326)")?
+  gps_route          Unsupported("geography(LineString, 4326)")?
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
@@ -118,6 +119,8 @@ model FaultPin {
   latitude             Float
   longitude            Float
   timestamp            DateTime
+  notes                String?
+  riskScore            Float?
   video_file_name      String?
   video_offset_seconds Int?
   createdAt            DateTime @default(now())

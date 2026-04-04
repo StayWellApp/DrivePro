@@ -42,6 +42,26 @@
     "faults": "Total Faults",
     "mapRoute": "Route & Incidents",
     "faultSummary": "Fault Summary",
-    "noFaults": "Great job! No faults recorded during this lesson."
+    "noFaults": "Great job! No faults recorded during this lesson.",
+    "riskScore": "Risk Score",
+    "instructorNotes": "Instructor Notes",
+    "analysis": "Observation Analysis",
+    "aiEngine": "Kinetic Precision Engine v4.2",
+    "replayIncident": "REPLAY INCIDENT",
+    "closeIntelligence": "CLOSE INTELLIGENCE",
+    "start": "Start",
+    "end": "End",
+    "replayAnalysis": "Replay sequence & analysis available"
+  },
+  "Fleet": {
+    "title": "Fleet Management",
+    "nextService": "Next Service",
+    "stkExpiry": "STK Expiry",
+    "viewDocuments": "Documents",
+    "edit": "Edit",
+    "noVehicles": "No vehicles found.",
+    "statusOk": "Healthy",
+    "statusWarning": "Maintenance Due",
+    "statusOverdue": "Overdue"
   }
 }

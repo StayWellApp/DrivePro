@@ -11,6 +11,7 @@ interface FaultPin {
   lat: number;
   lng: number;
   video_offset_seconds: number | null;
+  riskScore: number | null;
 }
 
 export default async function LessonDetailPage({
@@ -84,6 +85,7 @@ export default async function LessonDetailPage({
       lat: f.latitude,
       lng: f.longitude,
       video_offset_seconds: f.video_offset_seconds,
+      riskScore: f.riskScore || null,
     }));
   } catch (error) {
     console.error("Error fetching FaultPins:", error);
