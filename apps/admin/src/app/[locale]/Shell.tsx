@@ -37,7 +37,7 @@ export default function Shell({
           ))}
         </nav>
 
-        <div className="p-8 border-t border-white/10">
+        <div className="p-8 bg-primary-container/50">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-secondary-container/30 flex items-center justify-center text-secondary font-bold">
               JD
