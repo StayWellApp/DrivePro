@@ -213,6 +213,56 @@ app.post('/lessons/:id/heartbeat', async (req: Request, res: Response): Promise<
 });
 
 // Report Endpoint
+app.post('/lessons/:id/finish', async (req: Request, res: Response): Promise<any> => {
+  const lessonId = req.params.id as string;
+  const { school_id } = req.body;
+
+  try {
+    const lesson = await prisma.lesson.findUnique({
+      where: { id: lessonId },
+      include: { student: true, instructor: true }
+    });
+
+    if (!lesson) {
+      return res.status(404).json({ error: 'Lesson not found' });
+    }
+
+    const faultPins = await prisma.faultPin.findMany({
+      where: { lessonSession: { lesson_id: lessonId } }
+    });
+
+    const faults: Record<string, number> = faultPins.reduce((acc: Record<string, number>, pin: any) => {
+      acc[pin.category] = (acc[pin.category] || 0) + 1;
+      return acc;
+    }, {});
+
+    const reportData: ReportData = {
+      studentName: lesson.student.name,
+      instructorName: lesson.instructor.name,
+      startTime: lesson.startTime.toLocaleString(),
+      faults
+    };
+
+    // Trigger PDF generation and mock email sending
+    const pdfBuffer = await generatePdf(reportData);
+    console.log(`Generated PDF for student ${lesson.student.email}`);
+
+    // Update student skill tree (mock update)
+    console.log(`Updating skill tree for student ${lesson.student.id} based on ${faultPins.length} faults`);
+
+    // Update lesson end time
+    await prisma.lesson.update({
+      where: { id: lessonId },
+      data: { endTime: new Date() }
+    });
+
+    return res.status(200).json({ success: true, message: 'Lesson finalized, report sent.' });
+  } catch (error) {
+    console.error('Error finishing lesson:', error);
+    return res.status(500).json({ error: 'Failed to finish lesson' });
+  }
+});
+
 app.get('/lessons/:id/report', async (req: Request, res: Response): Promise<any> => {
   const lessonId = req.params.id as string;
 
@@ -272,6 +322,24 @@ const PORT = process.env.PORT || 8080;
 // Schedule lesson reminders (every day at 8 AM)
 cron.schedule('0 8 * * *', async () => {
   console.log('Running daily lesson reminders...');
+  // Check Fleet Health
+  const vehicles = await prisma.vehicle.findMany();
+  for (const vehicle of vehicles) {
+    const alertThresholdKm = 500;
+    if (vehicle.nextServiceMileage && (vehicle.nextServiceMileage - vehicle.current_mileage <= alertThresholdKm)) {
+      console.log(`FLEET ALERT: Vehicle ${vehicle.licensePlate} needs service soon (${vehicle.nextServiceMileage - vehicle.current_mileage}km remaining)`);
+      // In real app, push notification to Admin
+    }
+    const alertThresholdDays = 30;
+    const today = new Date();
+    if (vehicle.nextServiceDate) {
+      const diffDays = (new Date(vehicle.nextServiceDate).getTime() - today.getTime()) / (1000 * 60 * 60 * 24);
+      if (diffDays <= alertThresholdDays) {
+        console.log(`FLEET ALERT: Vehicle ${vehicle.licensePlate} service date approaching (${Math.round(diffDays)} days remaining)`);
+      }
+    }
+  }
+
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
   tomorrow.setHours(0, 0, 0, 0);

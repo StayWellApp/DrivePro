@@ -9,12 +9,16 @@
     "categoryC": "Kategorie C (Nákladní vozidla)",
     "registerButton": "Registrovat studenta"
   },
-  "TopupPage": {
+  "TopUp": {
     "title": "Dobití kreditu",
     "description": "Přidejte prostředky na svůj účet k úhradě lekcí.",
     "selectAmount": "Vyberte částku",
     "customAmount": "Vlastní částka",
-    "payButton": "Zaplatit přes Stripe"
+    "payButton": "Zaplatit přes Stripe",
+    "amountLabel": "Částka (CZK)",
+    "processing": "Zpracování...",
+    "submit": "Dobít kredit",
+    "balanceLabel": "Aktuální zůstatek"
   },
   "Validations": {
     "required": "Toto pole je povinné",
@@ -32,7 +36,8 @@
     "past": "Minulé lekce",
     "noPast": "Nebyly nalezeny žádné minulé lekce.",
     "completed": "Dokončeno",
-    "viewReplay": "Zobrazit záznam lekce"
+    "viewReplay": "Zobrazit záznam lekce",
+    "bookLesson": "Rezervovat novou lekci"
   },
   "LessonDetail": {
     "backToList": "Zpět na lekce",
@@ -51,7 +56,9 @@
     "closeIntelligence": "ZAVŘÍT INTELIGENCI",
     "start": "Start",
     "end": "Cíl",
-    "replayAnalysis": "K dispozici je přehrání sekvence a analýza"
+    "replayAnalysis": "K dispozici je přehrání sekvence a analýza",
+    "aiTip": "AI Tip",
+    "dashcamLink": "Přejít na palubní kameru"
   },
   "Fleet": {
     "title": "Správa vozového parku",
@@ -63,5 +70,18 @@
     "statusOk": "V pořádku",
     "statusWarning": "Blížící se údržba",
     "statusOverdue": "Servis po termínu"
+  },
+  "Finances": {
+    "title": "Finance",
+    "totalEarnings": "Celkové výdělky",
+    "stripeStatus": "Stav Stripe",
+    "connected": "Připojeno",
+    "pending": "Čeká na vyřízení",
+    "recentPayments": "Nedávné platby",
+    "student": "Student",
+    "amount": "Částka",
+    "date": "Datum",
+    "status": "Stav",
+    "noPayments": "Nebyly nalezeny žádné platby."
   }
 }
