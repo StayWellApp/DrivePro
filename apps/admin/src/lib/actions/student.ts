@@ -12,17 +12,20 @@ export async function createStudentAction(formData: FormData) {
   const phoneNumber = formData.get("phoneNumber") as string;
   const courseType = formData.get("courseType") as CourseType;
   const instructorId = formData.get("instructorId") as string;
-  const schoolId = "default-school";
+  const schoolId = "default-school"; // Hardcoded for MVP
 
-  if (!firstName || !lastName || !email || !courseType) {
-    throw new Error("Missing required fields: firstName, lastName, email, courseType");
+  // 1. Required Fields Validation
+  if (!firstName || !lastName || !email || !courseType || !schoolId) {
+    throw new Error("Missing required fields: firstName, lastName, email, courseType, schoolId");
   }
 
+  // 2. Phone Number Format Validation (Czech/Slovak: +420/421 followed by 9 digits)
   const phoneRegex = /^(\+420|\+421)\s?[0-9]{3}\s?[0-9]{3}\s?[0-9]{3}$/;
   if (phoneNumber && !phoneRegex.test(phoneNumber)) {
     throw new Error("Invalid phone number format. Use +420 123 456 789 or +421 123 456 789");
   }
 
+  // 3. Email Uniqueness Check
   const existingUser = await prisma.user.findUnique({
     where: { email },
   });
