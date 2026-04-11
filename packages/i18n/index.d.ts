@@ -1,5 +1,5 @@
 export const locales: readonly ["cs", "sk", "en"];
-export type Locale = typeof locales[number];
+export type Locale = (typeof locales)[number];
 export const defaultLocale: Locale;
 
 export const messages: {

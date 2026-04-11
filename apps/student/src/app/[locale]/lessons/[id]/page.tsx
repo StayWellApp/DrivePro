@@ -52,7 +52,9 @@ export default async function LessonDetailPage({
     if (routeData.length > 0 && routeData[0].geojson) {
       const geojson = JSON.parse(routeData[0].geojson);
       if (geojson.type === "LineString" && Array.isArray(geojson.coordinates)) {
-        routeCoordinates = geojson.coordinates.map((coord: [number, number]) => [coord[1], coord[0]]);
+        routeCoordinates = geojson.coordinates.map(
+          (coord: [number, number]) => [coord[1], coord[0]],
+        );
       }
     }
   } catch (error) {
@@ -67,7 +69,7 @@ export default async function LessonDetailPage({
           lesson_id: id,
         },
       },
-      orderBy: { timestamp: 'asc' }
+      orderBy: { timestamp: "asc" },
     });
 
     faults = faultData.map((f: any) => ({
@@ -93,7 +95,12 @@ export default async function LessonDetailPage({
       const R = 6371;
       const dLat = ((lat2 - lat1) * Math.PI) / 180;
       const dLon = ((lon2 - lon1) * Math.PI) / 180;
-      const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos((lat1 * Math.PI) / 180) *
+          Math.cos((lat2 * Math.PI) / 180) *
+          Math.sin(dLon / 2) *
+          Math.sin(dLon / 2);
       const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
       distanceKm += R * c;
     }
@@ -108,22 +115,32 @@ export default async function LessonDetailPage({
         {/* Map Overlay Intelligence Pane */}
         <div className="absolute top-6 right-6 w-72 glass-panel p-5 rounded-xl border border-white/20 shadow-2xl z-[400] bg-white/70 backdrop-blur-xl">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-extrabold tracking-tight text-on-surface uppercase">Route Intelligence</h3>
+            <h3 className="text-sm font-extrabold tracking-tight text-on-surface uppercase">
+              Route Intelligence
+            </h3>
             <span className="flex h-2 w-2 rounded-full bg-secondary-fixed animate-pulse"></span>
           </div>
           <div className="space-y-4">
             <div className="flex justify-between items-end">
-              <span className="text-xs text-on-surface-variant font-medium">{t("distance")}</span>
-              <span className="text-lg font-bold text-on-surface">{distanceKm.toFixed(1)} km</span>
+              <span className="text-xs text-on-surface-variant font-medium">
+                {t("distance")}
+              </span>
+              <span className="text-lg font-bold text-on-surface">
+                {distanceKm.toFixed(1)} km
+              </span>
             </div>
             <div className="flex justify-between items-end">
-              <span className="text-xs text-on-surface-variant font-medium">Top Speed</span>
+              <span className="text-xs text-on-surface-variant font-medium">
+                Top Speed
+              </span>
               <span className="text-lg font-bold text-on-surface">54 km/h</span>
             </div>
             <div className="w-full bg-surface-container-high h-1 rounded-full overflow-hidden">
               <div className="bg-secondary-fixed h-full w-[85%]"></div>
             </div>
-            <p className="text-[11px] text-on-surface-variant leading-relaxed">Route focus: Roundabout exits and high-speed merging maneuvers.</p>
+            <p className="text-[11px] text-on-surface-variant leading-relaxed">
+              Route focus: Roundabout exits and high-speed merging maneuvers.
+            </p>
           </div>
         </div>
       </section>
@@ -133,14 +150,24 @@ export default async function LessonDetailPage({
         {/* Left Column: Dashcam Player */}
         <div className="w-7/12 flex flex-col">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-extrabold uppercase tracking-widest text-on-surface">Dashcam Footage</h2>
+            <h2 className="text-sm font-extrabold uppercase tracking-widest text-on-surface">
+              Dashcam Footage
+            </h2>
             <div className="flex space-x-2">
-              <span className="bg-error/10 text-error text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-tighter">Event Flagged</span>
-              <span className="bg-secondary-container/30 text-on-secondary-container text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-tighter">HD 1080P</span>
+              <span className="bg-error/10 text-error text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-tighter">
+                Event Flagged
+              </span>
+              <span className="bg-secondary-container/30 text-on-secondary-container text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-tighter">
+                HD 1080P
+              </span>
             </div>
           </div>
           <div className="relative flex-1 bg-black rounded-xl overflow-hidden group shadow-lg min-h-[300px]">
-            <img className="w-full h-full object-cover opacity-80" alt="POV dashcam" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDwxiosWAH7zQs8xN_MLyc2S9N7WUwE3nzqUNC7CMOkrWDVfjH-H9CBPRDd2pwEpXlozEkp7WCUAvi3WDzDEg5doWTox0fd-9n3NoDABP93-zIHGs3FxgVTfOt80Py09tTC4wAlPukPigQ1OWiDpwdSzLIULonRCTYzRQV2fz2tyLVSCoctiZX6QNEke6a1rxhPGrKbykVK5_KxXP5rZJrF7yUhP0ChK9hTaaJAUhJntAZkYEv2zyFF8cV0iy0n4FtxQ7Xm1v8IJQ"/>
+            <img
+              className="w-full h-full object-cover opacity-80"
+              alt="POV dashcam"
+              src="https://lh3.googleusercontent.com/aida-public/AB6AXuDwxiosWAH7zQs8xN_MLyc2S9N7WUwE3nzqUNC7CMOkrWDVfjH-H9CBPRDd2pwEpXlozEkp7WCUAvi3WDzDEg5doWTox0fd-9n3NoDABP93-zIHGs3FxgVTfOt80Py09tTC4wAlPukPigQ1OWiDpwdSzLIULonRCTYzRQV2fz2tyLVSCoctiZX6QNEke6a1rxhPGrKbykVK5_KxXP5rZJrF7yUhP0ChK9hTaaJAUhJntAZkYEv2zyFF8cV0iy0n4FtxQ7Xm1v8IJQ"
+            />
             {/* Video Controls Overlay */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col justify-end p-6">
               <div className="w-full h-1 bg-white/20 rounded-full mb-4 relative">
@@ -150,13 +177,21 @@ export default async function LessonDetailPage({
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
                   <button className="text-white hover:text-secondary-fixed transition-colors">
-                    <span className="material-symbols-outlined text-3xl">play_arrow</span>
+                    <span className="material-symbols-outlined text-3xl">
+                      play_arrow
+                    </span>
                   </button>
-                  <span className="text-xs font-mono text-white/80">14:02 / 45:00</span>
+                  <span className="text-xs font-mono text-white/80">
+                    14:02 / 45:00
+                  </span>
                 </div>
                 <div className="flex items-center space-x-3">
-                  <span className="material-symbols-outlined text-white text-xl">volume_up</span>
-                  <span className="material-symbols-outlined text-white text-xl">fullscreen</span>
+                  <span className="material-symbols-outlined text-white text-xl">
+                    volume_up
+                  </span>
+                  <span className="material-symbols-outlined text-white text-xl">
+                    fullscreen
+                  </span>
                 </div>
               </div>
             </div>
@@ -166,38 +201,59 @@ export default async function LessonDetailPage({
         {/* Right Column: Instructor Notes & Timeline */}
         <div className="w-5/12 flex flex-col">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-extrabold uppercase tracking-widest text-on-surface">{t("instructorNotes")}</h2>
+            <h2 className="text-sm font-extrabold uppercase tracking-widest text-on-surface">
+              {t("instructorNotes")}
+            </h2>
             <button className="text-[11px] font-bold text-secondary flex items-center hover:underline">
-              <span className="material-symbols-outlined text-sm mr-1">download</span>
+              <span className="material-symbols-outlined text-sm mr-1">
+                download
+              </span>
               EXPORT PDF
             </button>
           </div>
           <div className="flex-1 overflow-y-auto space-y-3 pr-2 scrollbar-hide">
             {faults.length === 0 ? (
-               <div className="bg-secondary-container/10 p-5 rounded-xl border border-secondary-fixed/20 text-center">
-                  <p className="text-sm font-bold text-on-secondary-container">{t("noFaults")}</p>
-               </div>
+              <div className="bg-secondary-container/10 p-5 rounded-xl border border-secondary-fixed/20 text-center">
+                <p className="text-sm font-bold text-on-secondary-container">
+                  {t("noFaults")}
+                </p>
+              </div>
             ) : (
               faults.map((fault) => (
-                <div key={fault.id} className={`p-5 rounded-xl transition-all hover:bg-surface-bright group border border-transparent hover:border-outline-variant/10 shadow-sm ${fault.riskScore && fault.riskScore > 5 ? 'bg-error-container/10' : 'bg-surface-container-lowest'}`}>
+                <div
+                  key={fault.id}
+                  className={`p-5 rounded-xl transition-all hover:bg-surface-bright group border border-transparent hover:border-outline-variant/10 shadow-sm ${fault.riskScore && fault.riskScore > 5 ? "bg-error-container/10" : "bg-surface-container-lowest"}`}
+                >
                   <div className="flex justify-between items-start mb-3">
                     <div className="flex items-center">
-                      <span className={`font-mono text-xs font-bold mr-3 ${fault.riskScore && fault.riskScore > 5 ? 'text-error' : 'text-on-primary-container'}`}>
-                        {fault.video_offset_seconds ? `${Math.floor(fault.video_offset_seconds / 60)}:${(fault.video_offset_seconds % 60).toString().padStart(2, '0')}` : '00:00'}
+                      <span
+                        className={`font-mono text-xs font-bold mr-3 ${fault.riskScore && fault.riskScore > 5 ? "text-error" : "text-on-primary-container"}`}
+                      >
+                        {fault.video_offset_seconds
+                          ? `${Math.floor(fault.video_offset_seconds / 60)}:${(fault.video_offset_seconds % 60).toString().padStart(2, "0")}`
+                          : "00:00"}
                       </span>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-tighter ${fault.riskScore && fault.riskScore > 5 ? 'bg-error/10 text-error' : 'bg-secondary-container/30 text-on-secondary-container'}`}>
+                      <span
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-tighter ${fault.riskScore && fault.riskScore > 5 ? "bg-error/10 text-error" : "bg-secondary-container/30 text-on-secondary-container"}`}
+                      >
                         {fault.category}
                       </span>
                     </div>
                   </div>
-                  <h4 className="text-sm font-bold text-on-surface mb-1">{fault.category}</h4>
-                  <p className="text-xs text-on-surface-variant leading-relaxed">{fault.notes}</p>
+                  <h4 className="text-sm font-bold text-on-surface mb-1">
+                    {fault.category}
+                  </h4>
+                  <p className="text-xs text-on-surface-variant leading-relaxed">
+                    {fault.notes}
+                  </p>
                 </div>
               ))
             )}
 
             <div className="p-5 rounded-xl border border-dashed border-outline-variant">
-              <p className="text-xs italic text-on-surface-variant text-center">End of session analysis.</p>
+              <p className="text-xs italic text-on-surface-variant text-center">
+                End of session analysis.
+              </p>
             </div>
           </div>
         </div>

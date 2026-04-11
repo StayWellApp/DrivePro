@@ -1,4 +1,4 @@
-import puppeteer from 'puppeteer';
+import puppeteer from "puppeteer";
 
 export interface ReportData {
   studentName: string;
@@ -9,12 +9,17 @@ export interface ReportData {
 
 export async function generatePdf(data: ReportData): Promise<Buffer> {
   const faultEntries = Object.entries(data.faults);
-  const maxFaults = faultEntries.reduce((max, [_, count]) => Math.max(max, count), 0);
+  const maxFaults = faultEntries.reduce(
+    (max, [_, count]) => Math.max(max, count),
+    0,
+  );
 
-  const faultHtml = faultEntries.length > 0
-    ? faultEntries.map(([category, count]) => {
-        const width = maxFaults > 0 ? (count / maxFaults) * 100 : 0;
-        return `
+  const faultHtml =
+    faultEntries.length > 0
+      ? faultEntries
+          .map(([category, count]) => {
+            const width = maxFaults > 0 ? (count / maxFaults) * 100 : 0;
+            return `
           <div style="margin-bottom: 10px;">
             <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
               <span>${category}</span>
@@ -25,8 +30,9 @@ export async function generatePdf(data: ReportData): Promise<Buffer> {
             </div>
           </div>
         `;
-      }).join('')
-    : '<p>No faults recorded during this lesson.</p>';
+          })
+          .join("")
+      : "<p>No faults recorded during this lesson.</p>";
 
   const html = `
     <!DOCTYPE html>
@@ -78,16 +84,16 @@ export async function generatePdf(data: ReportData): Promise<Buffer> {
 
   const browser = await puppeteer.launch({
     headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox']
+    args: ["--no-sandbox", "--disable-setuid-sandbox"],
   });
 
   const page = await browser.newPage();
-  await page.setContent(html, { waitUntil: 'networkidle0' });
+  await page.setContent(html, { waitUntil: "networkidle0" });
 
   const pdfBuffer = await page.pdf({
-    format: 'A4',
+    format: "A4",
     printBackground: true,
-    margin: { top: '20px', right: '20px', bottom: '20px', left: '20px' }
+    margin: { top: "20px", right: "20px", bottom: "20px", left: "20px" },
   });
 
   await browser.close();

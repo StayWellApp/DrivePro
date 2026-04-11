@@ -1,7 +1,7 @@
-import {NextIntlClientProvider} from 'next-intl';
-import {getMessages} from 'next-intl/server';
-import { ReactNode } from 'react';
-import '../globals.css';
+import { NextIntlClientProvider } from "next-intl";
+import { getMessages } from "next-intl/server";
+import { ReactNode } from "react";
+import "../globals.css";
 
 export default async function RootLayout({
   children,
@@ -14,7 +14,7 @@ export default async function RootLayout({
   const messages = await getMessages();
 
   return (
-    <html lang={locale ?? 'cs'}>
+    <html lang={locale ?? "cs"}>
       <body className="antialiased min-h-screen bg-surface">
         <NextIntlClientProvider messages={messages}>
           {children}

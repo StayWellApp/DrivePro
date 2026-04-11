@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import dynamic from 'next/dynamic';
-import React from 'react';
+import dynamic from "next/dynamic";
+import React from "react";
 
 interface FaultPin {
   id: string;
@@ -19,7 +19,7 @@ interface LessonMapProps {
   videoUrl?: string;
 }
 
-const DynamicLessonMap = dynamic(() => import('./LessonMap'), { ssr: false });
+const DynamicLessonMap = dynamic(() => import("./LessonMap"), { ssr: false });
 
 export default function LessonMapWrapper(props: LessonMapProps) {
   return <DynamicLessonMap {...props} />;

@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { useTranslations } from 'next-intl';
+import React from "react";
+import { useTranslations } from "next-intl";
 
 interface TelemetryScrubberProps {
   currentTime: number;
@@ -9,12 +9,16 @@ interface TelemetryScrubberProps {
   onChange: (time: number) => void;
 }
 
-export default function TelemetryScrubber({ currentTime, duration, onChange }: TelemetryScrubberProps) {
-  const t = useTranslations('LessonsList'); // Reusing for generic strings if needed or LessonDetail
+export default function TelemetryScrubber({
+  currentTime,
+  duration,
+  onChange,
+}: TelemetryScrubberProps) {
+  const t = useTranslations("LessonsList"); // Reusing for generic strings if needed or LessonDetail
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
   return (

@@ -1,8 +1,8 @@
-import {getRequestConfig} from 'next-intl/server';
-import {routing} from './routing';
-import {messages, Locale} from '@repo/i18n';
+import { getRequestConfig } from "next-intl/server";
+import { routing } from "./routing";
+import { messages, Locale } from "@repo/i18n";
 
-export default getRequestConfig(async ({requestLocale}) => {
+export default getRequestConfig(async ({ requestLocale }) => {
   let locale = await requestLocale;
 
   // Ensure that a valid locale is used
@@ -12,6 +12,6 @@ export default getRequestConfig(async ({requestLocale}) => {
 
   return {
     locale,
-    messages: messages[locale as Locale]
+    messages: messages[locale as Locale],
   };
 });
