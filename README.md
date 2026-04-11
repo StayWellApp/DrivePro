@@ -1,58 +1,32 @@
-# Turborepo Tailwind CSS starter
+# DrivePro MVP
 
-This Turborepo starter is maintained by the Turborepo core team.
+DrivePro is a comprehensive platform for managing driving schools, tracking student progress, and monitoring fleet health.
 
-## Using this example
+## MVP Authentication
 
-Run the following command:
+The system uses NextAuth.js (Auth.js) with a Credentials provider.
 
-```sh
-npx create-turbo@latest -e with-tailwind
-```
+### Credentials
 
-## What's inside?
+- **Global Admin**:
+  - Email: `admin@drivepro.com`
+  - Password: `admin123`
+- **Demo Student**:
+  - Email: `student@example.com`
+  - Password: `student123`
 
-This Turborepo includes the following packages/apps:
+## Project Structure
 
-### Apps and Packages
+- `apps/admin`: Next.js application for school administrators.
+- `apps/student`: Next.js application for students to track progress and book lessons.
+- `apps/api`: Express.js backend for telemetry, notifications, and Stripe integration.
+- `packages/database`: Prisma schema and shared database client.
+- `packages/ui`: Shared UI components using Tailwind CSS.
 
-- `docs`: a [Next.js](https://nextjs.org/) app with [Tailwind CSS](https://tailwindcss.com/)
-- `web`: another [Next.js](https://nextjs.org/) app with [Tailwind CSS](https://tailwindcss.com/)
-- `ui`: a stub React component library with [Tailwind CSS](https://tailwindcss.com/) shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
+## Getting Started
 
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
-
-### Building packages/ui
-
-This example is set up to produce compiled styles for `ui` components into the `dist` directory. The component `.tsx` files are consumed by the Next.js apps directly using `transpilePackages` in `next.config.ts`. This was chosen for several reasons:
-
-- Make sharing one `tailwind.config.ts` to apps and packages as easy as possible.
-- Make package compilation simple by only depending on the Next.js Compiler and `tailwindcss`.
-- Ensure Tailwind classes do not overwrite each other. The `ui` package uses a `ui-` prefix for it's classes.
-- Maintain clear package export boundaries.
-
-Another option is to consume `packages/ui` directly from source without building. If using this option, you will need to update the `tailwind.config.ts` in your apps to be aware of your package locations, so it can find all usages of the `tailwindcss` class names for CSS compilation.
-
-For example, in [tailwind.config.ts](packages/tailwind-config/tailwind.config.ts):
-
-```js
-  content: [
-    // app content
-    `src/**/*.{js,ts,jsx,tsx}`,
-    // include packages if not transpiling
-    "../../packages/ui/*.{js,ts,jsx,tsx}",
-  ],
-```
-
-If you choose this strategy, you can remove the `tailwindcss` and `autoprefixer` dependencies from the `ui` package.
-
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [Tailwind CSS](https://tailwindcss.com/) for styles
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
+1. Install dependencies: `npm install`
+2. Setup environment: Copy `.env.example` to `.env` and configure `DATABASE_URL`.
+3. Generate Prisma client: `npx prisma generate --schema=packages/database/prisma/schema.prisma`
+4. Seed the database: `cd packages/database && npx tsx prisma/seed.ts`
+5. Run development server: `npm run dev`

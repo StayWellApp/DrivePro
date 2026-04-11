@@ -12,37 +12,49 @@ const sendEmail = async (to: string, subject: string, body: string) => {
 export const sendLessonReminder = async (lessonId: string) => {
   const lesson = await prisma.lesson.findUnique({
     where: { id: lessonId },
-    include: { student: true, instructor: true },
+    include: {
+      student: { include: { user: true } },
+      instructor: { include: { user: true } }
+    },
   });
 
   if (lesson) {
-    const message = `Reminder: You have a driving lesson tomorrow at ${lesson.startTime.toLocaleTimeString()} with ${lesson.instructor.name}.`;
+    const instructorName = `${lesson.instructor.user.firstName} ${lesson.instructor.user.lastName}`;
+    const message = `Reminder: You have a driving lesson tomorrow at ${lesson.startTime.toLocaleTimeString()} with ${instructorName}.`;
     await sendSms('student-phone', message); // Student phone should be in DB
-    await sendEmail(lesson.student.email, 'Driving Lesson Reminder', message);
+    // @ts-ignore
+    await sendEmail(lesson.student.user.email, 'Driving Lesson Reminder', message);
   }
 };
 
 export const sendCancellationNotification = async (lessonId: string) => {
   const lesson = await prisma.lesson.findUnique({
     where: { id: lessonId },
-    include: { student: true, instructor: true },
+    include: {
+      student: { include: { user: true } },
+      instructor: { include: { user: true } }
+    },
   });
 
   if (lesson) {
-    const message = `Important: Your driving lesson on ${lesson.startTime.toLocaleDateString()} with ${lesson.instructor.name} has been cancelled.`;
+    const instructorName = `${lesson.instructor.user.firstName} ${lesson.instructor.user.lastName}`;
+    const message = `Important: Your driving lesson on ${lesson.startTime.toLocaleDateString()} with ${instructorName} has been cancelled.`;
     await sendSms('student-phone', message);
-    await sendEmail(lesson.student.email, 'Lesson Cancelled', message);
+    // @ts-ignore
+    await sendEmail(lesson.student.user.email, 'Lesson Cancelled', message);
   }
 };
 
 export const sendLowBalanceAlert = async (studentId: string) => {
   const student = await prisma.student.findUnique({
     where: { id: studentId },
+    include: { user: true }
   });
 
   if (student && student.balance < 500) {
     const message = `Your credit balance is low (${student.balance} CZK). Please top up to avoid lesson cancellations.`;
     await sendSms('student-phone', message);
-    await sendEmail(student.email, 'Low Balance Alert', message);
+    // @ts-ignore
+    await sendEmail(student.user.email, 'Low Balance Alert', message);
   }
 };

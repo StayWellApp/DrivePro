@@ -3,6 +3,7 @@
 Since Service Account Key creation is blocked, you must set up Workload Identity Federation to allow your GitHub repository (`StayWellApp/DrivePro`) to securely trigger Cloud Build deployments without needing a long-lived JSON key.
 
 ## 1. Create a Workload Identity Pool
+
 This pool will manage external identities.
 
 ```bash
@@ -13,15 +14,18 @@ gcloud iam workload-identity-pools create "github-pool" \
 ```
 
 Get the pool's ID to use in the next steps:
+
 ```bash
 gcloud iam workload-identity-pools describe "github-pool" \
   --project="drivepro-production" \
   --location="global" \
   --format="value(name)"
 ```
-*(Keep this value handy, you'll need it later).*
+
+_(Keep this value handy, you'll need it later)._
 
 ## 2. Create a Workload Identity Provider
+
 This provider tells the pool to trust tokens issued by GitHub Actions for your specific repository.
 
 ```bash
@@ -36,6 +40,7 @@ gcloud iam workload-identity-pools providers create-oidc "github-provider" \
 ```
 
 ## 3. Bind the Service Account to the Identity Pool
+
 To actually perform actions, the GitHub identity needs to impersonate a Google Cloud Service Account.
 
 Assuming you want to use the default Compute Engine service account or a dedicated deployment account (e.g., `drivepro-deployer@drivepro-production.iam.gserviceaccount.com`), run the following command to bind the GitHub identity to it:

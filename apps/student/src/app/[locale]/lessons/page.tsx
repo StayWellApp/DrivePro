@@ -2,7 +2,11 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
-export default async function LessonsPage({ params }: { params: Promise<{ locale: string }> }) {
+export default async function LessonsPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "LessonsList" });
 
@@ -10,30 +14,32 @@ export default async function LessonsPage({ params }: { params: Promise<{ locale
   // For demonstration, we'll fetch the first student available in the DB
   let firstStudent = null;
   try {
-      firstStudent = await prisma.student.findFirst();
-  } catch(e) {}
+    firstStudent = await prisma.student.findFirst();
+  } catch (e) {}
 
   const studentId = firstStudent?.id || "mock-student-id";
 
   let lessons: any[] = [];
   try {
-      lessons = await prisma.lesson.findMany({
-        where: {
-          student_id: studentId,
-        },
-        orderBy: {
-          startTime: "desc",
-        },
-        include: {
-          instructor: true,
-          vehicle: true,
-        },
-      });
-  } catch(e) {}
+    lessons = await prisma.lesson.findMany({
+      where: {
+        student_id: studentId,
+      },
+      orderBy: {
+        startTime: "desc",
+      },
+      include: {
+        instructor: true,
+        vehicle: true,
+      },
+    });
+  } catch (e) {}
 
   const now = new Date();
   const pastLessons = lessons.filter((l: any) => l.endTime && l.endTime <= now);
-  const upcomingLessons = lessons.filter((l: any) => !l.endTime || l.endTime > now);
+  const upcomingLessons = lessons.filter(
+    (l: any) => !l.endTime || l.endTime > now,
+  );
 
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat(locale, {
@@ -77,10 +83,12 @@ export default async function LessonsPage({ params }: { params: Promise<{ locale
                 </div>
                 <div className="text-sm text-zinc-600 dark:text-zinc-400 space-y-1">
                   <p>
-                    <strong>{t("instructor")}:</strong> {lesson.instructor?.name || "N/A"}
+                    <strong>{t("instructor")}:</strong>{" "}
+                    {lesson.instructor?.name || "N/A"}
                   </p>
                   <p>
-                    <strong>{t("vehicle")}:</strong> {lesson.vehicle?.make} {lesson.vehicle?.model} ({lesson.vehicle?.licensePlate})
+                    <strong>{t("vehicle")}:</strong> {lesson.vehicle?.make}{" "}
+                    {lesson.vehicle?.model} ({lesson.vehicle?.licensePlate})
                   </p>
                 </div>
               </div>
@@ -101,7 +109,11 @@ export default async function LessonsPage({ params }: { params: Promise<{ locale
         ) : (
           <div className="grid gap-4">
             {pastLessons.map((lesson: any) => (
-              <Link href={`/${locale}/lessons/${lesson.id}`} key={lesson.id} className="block group">
+              <Link
+                href={`/${locale}/lessons/${lesson.id}`}
+                key={lesson.id}
+                className="block group"
+              >
                 <div className="p-6 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm transition-all hover:border-blue-400 hover:shadow-md">
                   <div className="flex justify-between items-start mb-2">
                     <div className="text-lg font-medium group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
@@ -113,10 +125,12 @@ export default async function LessonsPage({ params }: { params: Promise<{ locale
                   </div>
                   <div className="text-sm text-zinc-600 dark:text-zinc-400 space-y-1 mb-4">
                     <p>
-                      <strong>{t("instructor")}:</strong> {lesson.instructor?.name || "N/A"}
+                      <strong>{t("instructor")}:</strong>{" "}
+                      {lesson.instructor?.name || "N/A"}
                     </p>
                     <p>
-                      <strong>{t("vehicle")}:</strong> {lesson.vehicle?.make} {lesson.vehicle?.model} ({lesson.vehicle?.licensePlate})
+                      <strong>{t("vehicle")}:</strong> {lesson.vehicle?.make}{" "}
+                      {lesson.vehicle?.model} ({lesson.vehicle?.licensePlate})
                     </p>
                   </div>
                   <div className="text-sm font-medium text-blue-600 dark:text-blue-400 flex items-center">

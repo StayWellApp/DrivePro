@@ -1,72 +1,83 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Alert, SafeAreaView, ScrollView } from 'react-native';
-import * as Haptics from 'expo-haptics';
-import * as Location from 'expo-location';
-import * as TaskManager from 'expo-task-manager';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import io from 'socket.io-client';
+import React, { useState, useEffect } from "react";
+import {
+  StyleSheet,
+  Text,
+  View,
+  TouchableOpacity,
+  Alert,
+  SafeAreaView,
+  ScrollView,
+} from "react-native";
+import * as Haptics from "expo-haptics";
+import * as Location from "expo-location";
+import * as TaskManager from "expo-task-manager";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import io from "socket.io-client";
 
 const FAULT_CATEGORIES = [
-  'Observation',
-  'Junctions',
-  'Roundabouts',
-  'Parking',
-  'Speed',
-  'Positioning',
-  'Signalling',
+  "Observation",
+  "Junctions",
+  "Roundabouts",
+  "Parking",
+  "Speed",
+  "Positioning",
+  "Signalling",
 ];
 
 // Kinetic Precision Colors
 const COLORS = {
-  primary: '#0F172A', // Deep Navy
-  secondary: '#2DD4BF', // Electric Teal
-  surface: '#F7F9FB',
-  major: '#EF4444', // Red
-  minor: '#2DD4BF', // Teal (Electric Teal)
-  textMain: '#191C1E',
-  textVariant: '#45464D',
-  white: '#FFFFFF',
+  primary: "#0F172A", // Deep Navy
+  secondary: "#2DD4BF", // Electric Teal
+  surface: "#F7F9FB",
+  major: "#EF4444", // Red
+  minor: "#2DD4BF", // Teal (Electric Teal)
+  textMain: "#191C1E",
+  textVariant: "#45464D",
+  white: "#FFFFFF",
 };
 
-const MOCK_LESSON_ID = 'lesson-123';
-const MOCK_SCHOOL_ID = 'school-456';
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://10.0.2.2:8080';
-const FAULT_QUEUE_KEY = '@fault_queue';
+const MOCK_LESSON_ID = "lesson-123";
+const MOCK_SCHOOL_ID = "school-456";
+const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://10.0.2.2:8080";
+const FAULT_QUEUE_KEY = "@fault_queue";
 
 const socket = io(API_URL);
-const BACKGROUND_LOCATION_TASK = 'BACKGROUND_LOCATION_TASK';
+const BACKGROUND_LOCATION_TASK = "BACKGROUND_LOCATION_TASK";
 
-TaskManager.defineTask(BACKGROUND_LOCATION_TASK, async ({ data, error }: any) => {
-  if (error) {
-    console.error('Background location task error:', error);
-    return;
-  }
-  if (data) {
-    const { locations } = data;
-    const location = locations[0];
-    if (location) {
-      // In a real app, we would queue this for heartbeat sync
-      console.log('Background location received:', location.coords);
+TaskManager.defineTask(
+  BACKGROUND_LOCATION_TASK,
+  async ({ data, error }: any) => {
+    if (error) {
+      console.error("Background location task error:", error);
+      return;
+    }
+    if (data) {
+      const { locations } = data;
+      const location = locations[0];
+      if (location) {
+        // In a real app, we would queue this for heartbeat sync
+        console.log("Background location received:", location.coords);
 
-      // Attempt to send a minimal heartbeat if possible
-      try {
-        await fetch(`${API_URL}/lessons/${MOCK_LESSON_ID}/heartbeat`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            school_id: MOCK_SCHOOL_ID,
-            coordinates: {
-              latitude: location.coords.latitude,
-              longitude: location.coords.longitude,
-            },
-          }),
-        });
-      } catch (e) {
-        // Silently fail in background
+        // Attempt to send a minimal heartbeat if possible
+        try {
+          await fetch(`${API_URL}/lessons/${MOCK_LESSON_ID}/heartbeat`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              school_id: MOCK_SCHOOL_ID,
+              coordinates: {
+                latitude: location.coords.latitude,
+                longitude: location.coords.longitude,
+              },
+            }),
+          });
+        } catch (e) {
+          // Silently fail in background
+        }
       }
     }
-  }
-});
+  },
+);
 
 export function ActiveLessonScreen() {
   const [isSocketConnected, setIsSocketConnected] = useState(socket.connected);
@@ -74,46 +85,51 @@ export function ActiveLessonScreen() {
   const [selectedCategory, setSelectedCategory] = useState(FAULT_CATEGORIES[0]);
 
   useEffect(() => {
-    socket.on('connect', () => {
+    socket.on("connect", () => {
       setIsSocketConnected(true);
       syncOfflineFaults();
     });
 
-    socket.on('disconnect', () => {
+    socket.on("disconnect", () => {
       setIsSocketConnected(false);
     });
 
     return () => {
-      socket.off('connect');
-      socket.off('disconnect');
+      socket.off("connect");
+      socket.off("disconnect");
     };
   }, []);
 
   useEffect(() => {
     (async () => {
-      const { status: fgStatus } = await Location.requestForegroundPermissionsAsync();
-      if (fgStatus !== 'granted') {
-        Alert.alert('Permission Denied', 'Foreground location permission is required');
+      const { status: fgStatus } =
+        await Location.requestForegroundPermissionsAsync();
+      if (fgStatus !== "granted") {
+        Alert.alert(
+          "Permission Denied",
+          "Foreground location permission is required",
+        );
         return;
       }
 
-      const { status: bgStatus } = await Location.requestBackgroundPermissionsAsync();
-      if (bgStatus !== 'granted') {
-        console.warn('Background location permission denied');
+      const { status: bgStatus } =
+        await Location.requestBackgroundPermissionsAsync();
+      if (bgStatus !== "granted") {
+        console.warn("Background location permission denied");
       }
 
       setHasLocationPermission(true);
 
       // Start background location updates
-      await Location.startLocationUpdatesAsync('BACKGROUND_LOCATION_TASK', {
+      await Location.startLocationUpdatesAsync("BACKGROUND_LOCATION_TASK", {
         accuracy: Location.Accuracy.High,
         timeInterval: 2000,
         distanceInterval: 5,
         foregroundService: {
           notificationTitle: "DrivePro Active Tracking",
           notificationBody: "Recording lesson telemetry...",
-          notificationColor: COLORS.secondary
-        }
+          notificationColor: COLORS.secondary,
+        },
       });
     })();
   }, []);
@@ -126,58 +142,82 @@ export function ActiveLessonScreen() {
         if (queue && queue.length > 0) {
           let currentCoords = { latitude: 0, longitude: 0 };
           try {
-             const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Low });
-             currentCoords = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
-          } catch(e) {}
+            const loc = await Location.getCurrentPositionAsync({
+              accuracy: Location.Accuracy.Low,
+            });
+            currentCoords = {
+              latitude: loc.coords.latitude,
+              longitude: loc.coords.longitude,
+            };
+          } catch (e) {}
 
-          const response = await fetch(`${API_URL}/lessons/${MOCK_LESSON_ID}/heartbeat`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              school_id: MOCK_SCHOOL_ID,
-              coordinates: currentCoords,
-              faultPins: queue,
-            }),
-          });
+          const response = await fetch(
+            `${API_URL}/lessons/${MOCK_LESSON_ID}/heartbeat`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                school_id: MOCK_SCHOOL_ID,
+                coordinates: currentCoords,
+                faultPins: queue,
+              }),
+            },
+          );
 
           if (response.ok) {
-            const currentQueueJson = await AsyncStorage.getItem(FAULT_QUEUE_KEY);
-            const currentQueue = currentQueueJson ? JSON.parse(currentQueueJson) : [];
+            const currentQueueJson =
+              await AsyncStorage.getItem(FAULT_QUEUE_KEY);
+            const currentQueue = currentQueueJson
+              ? JSON.parse(currentQueueJson)
+              : [];
             const remainingQueue = currentQueue.filter(
-              (p: any) => !queue.some((syncedPin: any) => syncedPin.timestamp === p.timestamp && syncedPin.category === p.category)
+              (p: any) =>
+                !queue.some(
+                  (syncedPin: any) =>
+                    syncedPin.timestamp === p.timestamp &&
+                    syncedPin.category === p.category,
+                ),
             );
 
             if (remainingQueue.length === 0) {
               await AsyncStorage.removeItem(FAULT_QUEUE_KEY);
             } else {
-              await AsyncStorage.setItem(FAULT_QUEUE_KEY, JSON.stringify(remainingQueue));
+              await AsyncStorage.setItem(
+                FAULT_QUEUE_KEY,
+                JSON.stringify(remainingQueue),
+              );
             }
           }
         }
       }
     } catch (error) {
-      console.error('Error syncing offline faults:', error);
+      console.error("Error syncing offline faults:", error);
     }
   };
 
-  const handleFaultTap = async (type: 'major' | 'minor') => {
-    if (type === 'major') {
+  const handleFaultTap = async (type: "major" | "minor") => {
+    if (type === "major") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-      setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy), 100);
+      setTimeout(
+        () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy),
+        100,
+      );
     } else {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     }
 
     if (!hasLocationPermission) {
-      Alert.alert('Error', 'Location permission is required.');
+      Alert.alert("Error", "Location permission is required.");
       return;
     }
 
     let location;
     try {
-      location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+      location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+      });
     } catch (e) {
-      Alert.alert('Error', 'Could not get location.');
+      Alert.alert("Error", "Could not get location.");
       return;
     }
 
@@ -198,7 +238,7 @@ export function ActiveLessonScreen() {
         queue.push(pin);
         await AsyncStorage.setItem(FAULT_QUEUE_KEY, JSON.stringify(queue));
       } catch (err) {
-        console.error('Failed to save to offline queue', err);
+        console.error("Failed to save to offline queue", err);
       }
     };
 
@@ -208,18 +248,21 @@ export function ActiveLessonScreen() {
     }
 
     try {
-      const response = await fetch(`${API_URL}/lessons/${MOCK_LESSON_ID}/heartbeat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          school_id: MOCK_SCHOOL_ID,
-          coordinates: {
-            latitude: location.coords.latitude,
-            longitude: location.coords.longitude,
-          },
-          faultPins: [faultPin],
-        }),
-      });
+      const response = await fetch(
+        `${API_URL}/lessons/${MOCK_LESSON_ID}/heartbeat`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            school_id: MOCK_SCHOOL_ID,
+            coordinates: {
+              latitude: location.coords.latitude,
+              longitude: location.coords.longitude,
+            },
+            faultPins: [faultPin],
+          }),
+        },
+      );
 
       if (!response.ok) {
         await saveToOfflineQueue(faultPin);
@@ -238,20 +281,26 @@ export function ActiveLessonScreen() {
         </View>
 
         <View style={styles.categorySelector}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.scrollContent}
+          >
             {FAULT_CATEGORIES.map((cat) => (
               <TouchableOpacity
                 key={cat}
                 onPress={() => setSelectedCategory(cat)}
                 style={[
                   styles.categoryChip,
-                  selectedCategory === cat && styles.categoryChipActive
+                  selectedCategory === cat && styles.categoryChipActive,
                 ]}
               >
-                <Text style={[
-                  styles.categoryText,
-                  selectedCategory === cat && styles.categoryTextActive
-                ]}>
+                <Text
+                  style={[
+                    styles.categoryText,
+                    selectedCategory === cat && styles.categoryTextActive,
+                  ]}
+                >
                   {cat.toUpperCase()}
                 </Text>
               </TouchableOpacity>
@@ -262,7 +311,7 @@ export function ActiveLessonScreen() {
         <View style={styles.hudGrid}>
           <TouchableOpacity
             style={[styles.hudButton, styles.buttonMinor]}
-            onPress={() => handleFaultTap('minor')}
+            onPress={() => handleFaultTap("minor")}
             activeOpacity={0.8}
           >
             <Text style={styles.hudButtonLabel}>MINOR</Text>
@@ -271,7 +320,7 @@ export function ActiveLessonScreen() {
 
           <TouchableOpacity
             style={[styles.hudButton, styles.buttonMajor]}
-            onPress={() => handleFaultTap('major')}
+            onPress={() => handleFaultTap("major")}
             activeOpacity={0.8}
           >
             <Text style={styles.hudButtonLabel}>MAJOR</Text>
@@ -284,21 +333,24 @@ export function ActiveLessonScreen() {
             style={styles.dashcamButton}
             onPress={async () => {
               try {
-                const response = await fetch(`${API_URL}/lessons/${MOCK_LESSON_ID}/sync-dashcam`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    school_id: MOCK_SCHOOL_ID,
-                    dashcam_start_time: new Date().toISOString()
-                  }),
-                });
+                const response = await fetch(
+                  `${API_URL}/lessons/${MOCK_LESSON_ID}/sync-dashcam`,
+                  {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      school_id: MOCK_SCHOOL_ID,
+                      dashcam_start_time: new Date().toISOString(),
+                    }),
+                  },
+                );
                 if (response.ok) {
-                  Alert.alert('Success', 'Dashcam sync point captured.');
+                  Alert.alert("Success", "Dashcam sync point captured.");
                 } else {
-                  throw new Error('Sync failed');
+                  throw new Error("Sync failed");
                 }
               } catch (e) {
-                Alert.alert('Error', 'Failed to sync dashcam.');
+                Alert.alert("Error", "Failed to sync dashcam.");
               }
             }}
           >
@@ -325,13 +377,13 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 42,
-    fontWeight: '900',
+    fontWeight: "900",
     color: COLORS.primary,
     letterSpacing: -2,
   },
   subtitle: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: "700",
     color: COLORS.textVariant,
     letterSpacing: 2,
     marginTop: 4,
@@ -354,7 +406,7 @@ const styles = StyleSheet.create({
   },
   categoryText: {
     fontSize: 12,
-    fontWeight: '800',
+    fontWeight: "800",
     color: COLORS.textVariant,
     letterSpacing: 1,
   },
@@ -369,7 +421,7 @@ const styles = StyleSheet.create({
   hudButton: {
     flex: 1,
     borderRadius: 32,
-    justifyContent: 'center',
+    justifyContent: "center",
     paddingHorizontal: 40,
   },
   buttonMinor: {
@@ -381,14 +433,14 @@ const styles = StyleSheet.create({
   hudButtonLabel: {
     color: COLORS.white,
     fontSize: 18,
-    fontWeight: '900',
+    fontWeight: "900",
     letterSpacing: 4,
     opacity: 0.8,
   },
   hudButtonMain: {
     color: COLORS.white,
     fontSize: 64,
-    fontWeight: '900',
+    fontWeight: "900",
     letterSpacing: -4,
     lineHeight: 64,
   },
@@ -399,12 +451,12 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     padding: 24,
     borderRadius: 24,
-    alignItems: 'center',
+    alignItems: "center",
   },
   dashcamButtonText: {
     color: COLORS.white,
     fontSize: 16,
-    fontWeight: '900',
+    fontWeight: "900",
     letterSpacing: 2,
   },
 });

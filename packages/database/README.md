@@ -13,7 +13,8 @@ To run the database connection locally, we use the Google Cloud SQL Auth Proxy t
    ```bash
    ./cloud-sql-proxy <GOOGLE_PROJECT_ID>:europe-west3:drivepro-db-main
    ```
-   *(Ensure to use the correct region like `europe-west3` or `europe-west4` depending on your instance).*
+
+   _(Ensure to use the correct region like `europe-west3` or `europe-west4` depending on your instance)._
 
 4. **Environment Configuration**: Set your `DATABASE_URL` in `.env` to connect to `localhost:5432` where the proxy is listening. Do not use hardcoded credentials; use placeholders:
 

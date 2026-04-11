@@ -1,35 +1,38 @@
-import Stripe from 'stripe';
-import { prisma } from '@repo/database';
-import { sendLowBalanceAlert } from './notifications';
+import Stripe from "stripe";
+import { prisma } from "@repo/database";
+import { sendLowBalanceAlert } from "./notifications.js";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-02-24.acacia',
+  apiVersion: "2025-02-24.acacia",
 } as any);
 
-export const createCheckoutSession = async (studentId: string, amount: number) => {
+export const createCheckoutSession = async (
+  studentId: string,
+  amount: number,
+) => {
   const student = await prisma.student.findUnique({
     where: { id: studentId },
-    include: { school: true },
+    include: { school: true, user: true },
   });
 
-  if (!student) throw new Error('Student not found');
+  if (!student) throw new Error("Student not found");
 
   const session = await stripe.checkout.sessions.create({
-    payment_method_types: ['card'],
-    customer_email: student.email,
+    payment_method_types: ["card"],
+    customer_email: student.user.email,
     line_items: [
       {
         price_data: {
-          currency: 'czk',
+          currency: "czk",
           product_data: {
-            name: 'Lesson Credits Top-up',
+            name: "Lesson Credits Top-up",
           },
           unit_amount: amount * 100,
         },
         quantity: 1,
       },
     ],
-    mode: 'payment',
+    mode: "payment",
     success_url: `${process.env.STUDENT_APP_URL}/topup/success`,
     cancel_url: `${process.env.STUDENT_APP_URL}/topup/cancel`,
     metadata: {
@@ -48,13 +51,13 @@ export const handleStripeWebhook = async (sig: string, body: Buffer) => {
     event = stripe.webhooks.constructEvent(
       body,
       sig,
-      process.env.STRIPE_WEBHOOK_SECRET!
+      process.env.STRIPE_WEBHOOK_SECRET!,
     );
   } catch (err: any) {
     throw new Error(`Webhook Error: ${err.message}`);
   }
 
-  if (event.type === 'checkout.session.completed') {
+  if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
     const studentId = session.metadata?.studentId;
     const amount = session.amount_total ? session.amount_total / 100 : 0;
@@ -70,7 +73,7 @@ export const handleStripeWebhook = async (sig: string, body: Buffer) => {
             student_id: studentId,
             school_id: session.metadata?.schoolId!,
             amount,
-            status: 'completed',
+            status: "completed",
           },
         }),
       ]);
