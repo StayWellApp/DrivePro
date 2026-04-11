@@ -1,4 +1,5 @@
 FROM node:22-bookworm-slim AS base
+RUN apt-get update -y && apt-get install -y openssl
 
 FROM base AS builder
 WORKDIR /app
@@ -13,6 +14,7 @@ WORKDIR /app
 COPY .gitignore .gitignore
 COPY --from=builder /app/out/json/ .
 COPY --from=builder /app/out/package-lock.json ./package-lock.json
+COPY --from=builder /app/out/full/packages/database/prisma ./packages/database/prisma
 RUN npm ci
 
 # Build the project

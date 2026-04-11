@@ -42,6 +42,26 @@
     "faults": "Celkom chýb",
     "mapRoute": "Trasa a incidenty",
     "faultSummary": "Zhrnutie chýb",
-    "noFaults": "Skvelá práca! Počas tejto lekcie neboli zaznamenané žiadne chyby."
+    "noFaults": "Skvelá práca! Počas tejto lekcie neboli zaznamenané žiadne chyby.",
+    "riskScore": "Skóre rizika",
+    "instructorNotes": "Poznámky inštruktora",
+    "analysis": "Analýza pozorovania",
+    "aiEngine": "Kinetic Precision Engine v4.2",
+    "replayIncident": "PREHRAŤ INCIDENT",
+    "closeIntelligence": "ZAVRIEŤ INTELIGENCIU",
+    "start": "Štart",
+    "end": "Cieľ",
+    "replayAnalysis": "K dispozícii je prehratie sekvencie a analýza"
+  },
+  "Fleet": {
+    "title": "Správa vozového parku",
+    "nextService": "Pravidelný servis",
+    "stkExpiry": "STK platná do",
+    "viewDocuments": "Dokumenty",
+    "edit": "Upraviť",
+    "noVehicles": "Nenašli sa žiadne vozidlá.",
+    "statusOk": "V poriadku",
+    "statusWarning": "Blížiaca sa údržba",
+    "statusOverdue": "Servis po termíne"
   }
 }

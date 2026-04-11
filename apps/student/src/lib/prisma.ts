@@ -1,6 +1,7 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, mapGeometryToGeoJSON } from "@repo/database";
 
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
+export { mapGeometryToGeoJSON };
 
 export const prisma =
   globalForPrisma.prisma ||

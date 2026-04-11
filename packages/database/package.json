@@ -1,20 +1,27 @@
 {
-  "name": "database",
+  "name": "@repo/database",
   "version": "1.0.0",
   "description": "",
-  "main": "index.ts",
+  "main": "./index.ts",
+  "type": "module",
+  "types": "./index.ts",
   "scripts": {
+    "build": "tsc",
+    "check-types": "tsc --noEmit",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "module",
   "devDependencies": {
+    "@repo/typescript-config": "*",
+    "@types/node": "^20",
     "dotenv": "^16.0.3",
-    "prisma": "^6.4.1"
+    "prisma": "^6.4.1",
+    "typescript": "^5"
   },
   "dependencies": {
-    "@prisma/client": "^6.4.1"
+    "@prisma/client": "^6.4.1",
+    "wkx": "^0.5.0"
   }
 }

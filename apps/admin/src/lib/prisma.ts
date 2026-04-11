@@ -1,4 +1,4 @@
-import { prisma as databasePrisma, PrismaClient } from "database";
+import { prisma as databasePrisma, PrismaClient } from "@repo/database";
 
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
 

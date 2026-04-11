@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Alert } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Alert, SafeAreaView, ScrollView } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import * as Location from 'expo-location';
+import * as TaskManager from 'expo-task-manager';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import io from 'socket.io-client';
 
@@ -15,68 +16,62 @@ const FAULT_CATEGORIES = [
   'Signalling',
 ];
 
-// Mock values since we don't have auth state yet
+// Kinetic Precision Colors
+const COLORS = {
+  primary: '#0F172A', // Deep Navy
+  secondary: '#2DD4BF', // Electric Teal
+  surface: '#F7F9FB',
+  major: '#EF4444', // Red
+  minor: '#2DD4BF', // Teal (Electric Teal)
+  textMain: '#191C1E',
+  textVariant: '#45464D',
+  white: '#FFFFFF',
+};
+
 const MOCK_LESSON_ID = 'lesson-123';
 const MOCK_SCHOOL_ID = 'school-456';
-// Local or production API
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://10.0.2.2:8080';
-
 const FAULT_QUEUE_KEY = '@fault_queue';
 
-// Initialize socket connection outside the component or inside useEffect. Let's do it outside for singleton use.
 const socket = io(API_URL);
+const BACKGROUND_LOCATION_TASK = 'BACKGROUND_LOCATION_TASK';
+
+TaskManager.defineTask(BACKGROUND_LOCATION_TASK, async ({ data, error }: any) => {
+  if (error) {
+    console.error('Background location task error:', error);
+    return;
+  }
+  if (data) {
+    const { locations } = data;
+    const location = locations[0];
+    if (location) {
+      // In a real app, we would queue this for heartbeat sync
+      console.log('Background location received:', location.coords);
+
+      // Attempt to send a minimal heartbeat if possible
+      try {
+        await fetch(`${API_URL}/lessons/${MOCK_LESSON_ID}/heartbeat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            school_id: MOCK_SCHOOL_ID,
+            coordinates: {
+              latitude: location.coords.latitude,
+              longitude: location.coords.longitude,
+            },
+          }),
+        });
+      } catch (e) {
+        // Silently fail in background
+      }
+    }
+  }
+});
 
 export function ActiveLessonScreen() {
   const [isSocketConnected, setIsSocketConnected] = useState(socket.connected);
-
-  // Sync offline faults when socket connects
-  const syncOfflineFaults = async () => {
-    try {
-      const queueJson = await AsyncStorage.getItem(FAULT_QUEUE_KEY);
-      if (queueJson) {
-        const queue = JSON.parse(queueJson);
-        if (queue && queue.length > 0) {
-          // Send all queued faults at once. We'll send an empty coordinates payload if we don't have current GPS for sync,
-          // or we can fetch current. The backend heartbeat endpoint accepts an array of faultPins.
-          console.log(`Syncing ${queue.length} offline faults...`);
-
-          let currentCoords = { latitude: 0, longitude: 0 };
-          try {
-             const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Low });
-             currentCoords = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
-          } catch(e) {}
-
-          const response = await fetch(`${API_URL}/lessons/${MOCK_LESSON_ID}/heartbeat`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              school_id: MOCK_SCHOOL_ID,
-              coordinates: currentCoords,
-              faultPins: queue,
-            }),
-          });
-
-          if (response.ok) {
-            // Read again to avoid overwriting faults added during the fetch
-            const currentQueueJson = await AsyncStorage.getItem(FAULT_QUEUE_KEY);
-            const currentQueue = currentQueueJson ? JSON.parse(currentQueueJson) : [];
-            const remainingQueue = currentQueue.filter(
-              (p: any) => !queue.some((syncedPin: any) => syncedPin.timestamp === p.timestamp && syncedPin.category === p.category)
-            );
-
-            if (remainingQueue.length === 0) {
-              await AsyncStorage.removeItem(FAULT_QUEUE_KEY);
-            } else {
-              await AsyncStorage.setItem(FAULT_QUEUE_KEY, JSON.stringify(remainingQueue));
-            }
-            console.log('Successfully synced offline faults.');
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error syncing offline faults:', error);
-    }
-  };
+  const [hasLocationPermission, setHasLocationPermission] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState(FAULT_CATEGORIES[0]);
 
   useEffect(() => {
     socket.on('connect', () => {
@@ -94,47 +89,102 @@ export function ActiveLessonScreen() {
     };
   }, []);
 
-  const [hasLocationPermission, setHasLocationPermission] = useState(false);
-
   useEffect(() => {
     (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission Denied', 'Permission to access location was denied');
+      const { status: fgStatus } = await Location.requestForegroundPermissionsAsync();
+      if (fgStatus !== 'granted') {
+        Alert.alert('Permission Denied', 'Foreground location permission is required');
         return;
       }
+
+      const { status: bgStatus } = await Location.requestBackgroundPermissionsAsync();
+      if (bgStatus !== 'granted') {
+        console.warn('Background location permission denied');
+      }
+
       setHasLocationPermission(true);
+
+      // Start background location updates
+      await Location.startLocationUpdatesAsync('BACKGROUND_LOCATION_TASK', {
+        accuracy: Location.Accuracy.High,
+        timeInterval: 2000,
+        distanceInterval: 5,
+        foregroundService: {
+          notificationTitle: "DrivePro Active Tracking",
+          notificationBody: "Recording lesson telemetry...",
+          notificationColor: COLORS.secondary
+        }
+      });
     })();
   }, []);
 
-  const handleFaultTap = async (category: string) => {
-    // 1. Trigger haptic feedback immediately (Double-Pulse)
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    setTimeout(() => {
+  const syncOfflineFaults = async () => {
+    try {
+      const queueJson = await AsyncStorage.getItem(FAULT_QUEUE_KEY);
+      if (queueJson) {
+        const queue = JSON.parse(queueJson);
+        if (queue && queue.length > 0) {
+          let currentCoords = { latitude: 0, longitude: 0 };
+          try {
+             const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Low });
+             currentCoords = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
+          } catch(e) {}
+
+          const response = await fetch(`${API_URL}/lessons/${MOCK_LESSON_ID}/heartbeat`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              school_id: MOCK_SCHOOL_ID,
+              coordinates: currentCoords,
+              faultPins: queue,
+            }),
+          });
+
+          if (response.ok) {
+            const currentQueueJson = await AsyncStorage.getItem(FAULT_QUEUE_KEY);
+            const currentQueue = currentQueueJson ? JSON.parse(currentQueueJson) : [];
+            const remainingQueue = currentQueue.filter(
+              (p: any) => !queue.some((syncedPin: any) => syncedPin.timestamp === p.timestamp && syncedPin.category === p.category)
+            );
+
+            if (remainingQueue.length === 0) {
+              await AsyncStorage.removeItem(FAULT_QUEUE_KEY);
+            } else {
+              await AsyncStorage.setItem(FAULT_QUEUE_KEY, JSON.stringify(remainingQueue));
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error syncing offline faults:', error);
+    }
+  };
+
+  const handleFaultTap = async (type: 'major' | 'minor') => {
+    if (type === 'major') {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    }, 150);
+      setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy), 100);
+    } else {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    }
 
     if (!hasLocationPermission) {
-      Alert.alert('Error', 'Location permission is required to pin faults.');
+      Alert.alert('Error', 'Location permission is required.');
       return;
     }
 
     let location;
     try {
-      // 2. Capture GPS coordinate and timestamp
-      location = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.High,
-      });
+      location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
     } catch (e) {
       Alert.alert('Error', 'Could not get location.');
       return;
     }
 
-    const timestamp = new Date().toISOString();
-
     const faultPin = {
-      category,
-      timestamp,
+      category: selectedCategory,
+      type,
+      timestamp: new Date().toISOString(),
       location: {
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
@@ -147,25 +197,20 @@ export function ActiveLessonScreen() {
         const queue = queueJson ? JSON.parse(queueJson) : [];
         queue.push(pin);
         await AsyncStorage.setItem(FAULT_QUEUE_KEY, JSON.stringify(queue));
-        console.log('Fault pinned offline. Will sync when connected.');
       } catch (err) {
         console.error('Failed to save to offline queue', err);
       }
     };
 
     if (!isSocketConnected) {
-      // Offline: immediately queue it
       await saveToOfflineQueue(faultPin);
       return;
     }
 
     try {
-      // 3. Send to API Heartbeat Endpoint
       const response = await fetch(`${API_URL}/lessons/${MOCK_LESSON_ID}/heartbeat`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           school_id: MOCK_SCHOOL_ID,
           coordinates: {
@@ -177,81 +222,189 @@ export function ActiveLessonScreen() {
       });
 
       if (!response.ok) {
-        console.error('Failed to save fault pin:', await response.text());
-        // Fallback to queue if server returns an error like 5xx
         await saveToOfflineQueue(faultPin);
       }
     } catch (error) {
-      console.error('Error in fault pinning:', error);
-      // Fallback to queue on network error
       await saveToOfflineQueue(faultPin);
     }
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.headerText}>Active Lesson</Text>
-      <Text style={styles.subHeaderText}>Tap a category to pin a fault</Text>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.title}>ACTIVE LESSON</Text>
+          <Text style={styles.subtitle}>Session: #L-12345</Text>
+        </View>
 
-      <View style={styles.grid}>
-        {FAULT_CATEGORIES.map((category) => (
+        <View style={styles.categorySelector}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+            {FAULT_CATEGORIES.map((cat) => (
+              <TouchableOpacity
+                key={cat}
+                onPress={() => setSelectedCategory(cat)}
+                style={[
+                  styles.categoryChip,
+                  selectedCategory === cat && styles.categoryChipActive
+                ]}
+              >
+                <Text style={[
+                  styles.categoryText,
+                  selectedCategory === cat && styles.categoryTextActive
+                ]}>
+                  {cat.toUpperCase()}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+
+        <View style={styles.hudGrid}>
           <TouchableOpacity
-            key={category}
-            style={styles.button}
-            onPress={() => handleFaultTap(category)}
-            activeOpacity={0.7}
+            style={[styles.hudButton, styles.buttonMinor]}
+            onPress={() => handleFaultTap('minor')}
+            activeOpacity={0.8}
           >
-            <Text style={styles.buttonText}>{category}</Text>
+            <Text style={styles.hudButtonLabel}>MINOR</Text>
+            <Text style={styles.hudButtonMain}>FAULT</Text>
           </TouchableOpacity>
-        ))}
+
+          <TouchableOpacity
+            style={[styles.hudButton, styles.buttonMajor]}
+            onPress={() => handleFaultTap('major')}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.hudButtonLabel}>MAJOR</Text>
+            <Text style={styles.hudButtonMain}>FAULT</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.footer}>
+          <TouchableOpacity
+            style={styles.dashcamButton}
+            onPress={async () => {
+              try {
+                const response = await fetch(`${API_URL}/lessons/${MOCK_LESSON_ID}/sync-dashcam`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    school_id: MOCK_SCHOOL_ID,
+                    dashcam_start_time: new Date().toISOString()
+                  }),
+                });
+                if (response.ok) {
+                  Alert.alert('Success', 'Dashcam sync point captured.');
+                } else {
+                  throw new Error('Sync failed');
+                }
+              } catch (e) {
+                Alert.alert('Error', 'Failed to sync dashcam.');
+              }
+            }}
+          >
+            <Text style={styles.dashcamButtonText}>SYNC DASHCAM</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: COLORS.surface,
+  },
   container: {
     flex: 1,
-    padding: 16,
-    backgroundColor: '#f5f5f5',
+    padding: 24,
   },
-  headerText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 8,
-    textAlign: 'center',
-    marginTop: 40,
+  header: {
+    marginBottom: 40,
+    marginTop: 20,
   },
-  subHeaderText: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 24,
-    textAlign: 'center',
+  title: {
+    fontSize: 42,
+    fontWeight: '900',
+    color: COLORS.primary,
+    letterSpacing: -2,
   },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    paddingHorizontal: 8,
+  subtitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.textVariant,
+    letterSpacing: 2,
+    marginTop: 4,
   },
-  button: {
-    width: '48%', // 2 columns
-    aspectRatio: 1, // square buttons
-    backgroundColor: '#ff4444',
-    borderRadius: 16,
+  categorySelector: {
+    marginBottom: 32,
+  },
+  scrollContent: {
+    paddingRight: 24,
+  },
+  categoryChip: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    backgroundColor: COLORS.white,
+    borderRadius: 30,
+    marginRight: 12,
+  },
+  categoryChipActive: {
+    backgroundColor: COLORS.primary,
+  },
+  categoryText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: COLORS.textVariant,
+    letterSpacing: 1,
+  },
+  categoryTextActive: {
+    color: COLORS.white,
+  },
+  hudGrid: {
+    flex: 1,
+    gap: 24,
+    marginBottom: 32,
+  },
+  hudButton: {
+    flex: 1,
+    borderRadius: 32,
     justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    paddingHorizontal: 40,
   },
-  buttonText: {
-    color: 'white',
+  buttonMinor: {
+    backgroundColor: COLORS.secondary,
+  },
+  buttonMajor: {
+    backgroundColor: COLORS.major,
+  },
+  hudButtonLabel: {
+    color: COLORS.white,
     fontSize: 18,
-    fontWeight: 'bold',
-    textAlign: 'center',
+    fontWeight: '900',
+    letterSpacing: 4,
+    opacity: 0.8,
+  },
+  hudButtonMain: {
+    color: COLORS.white,
+    fontSize: 64,
+    fontWeight: '900',
+    letterSpacing: -4,
+    lineHeight: 64,
+  },
+  footer: {
+    gap: 16,
+  },
+  dashcamButton: {
+    backgroundColor: COLORS.primary,
+    padding: 24,
+    borderRadius: 24,
+    alignItems: 'center',
+  },
+  dashcamButtonText: {
+    color: COLORS.white,
+    fontSize: 16,
+    fontWeight: '900',
+    letterSpacing: 2,
   },
 });

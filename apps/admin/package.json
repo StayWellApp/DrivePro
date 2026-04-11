@@ -10,8 +10,10 @@
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
+    "@repo/database": "*",
     "@repo/i18n": "^1.0.0",
-    "database": "^1.0.0",
+    "@repo/tailwind-config": "*",
+    "@repo/ui": "*",
     "i18next": "^26.0.1",
     "next": "16.2.1",
     "next-i18next": "^16.0.4",

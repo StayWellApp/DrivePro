@@ -3,8 +3,12 @@ import express, { Request, Response } from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
-import { prisma } from 'database';
+import { prisma } from '@repo/database';
 import { generatePdf, ReportData } from './services/pdfGenerator';
+import { handleStripeWebhook, createCheckoutSession } from './services/stripe';
+import cron from 'node-cron';
+import { sendLessonReminder } from './services/notifications';
+import multer from 'multer';
 
 const app = express();
 const server = createServer(app);
@@ -18,7 +22,104 @@ const io = new Server(server, {
 });
 
 app.use(cors());
+
+// Webhook endpoint needs raw body
+app.post('/webhooks/stripe', express.raw({ type: 'application/json' }), async (req: Request, res: Response): Promise<any> => {
+  const sig = req.headers['stripe-signature'] as string;
+  try {
+    const result = await handleStripeWebhook(sig, req.body);
+    return res.status(200).json(result);
+  } catch (error: any) {
+    console.error('Webhook processing failed:', error.message);
+    return res.status(400).send(`Webhook Error: ${error.message}`);
+  }
+});
+
 app.use(express.json());
+
+// File upload setup
+const upload = multer({ dest: 'uploads/' });
+
+app.post('/vehicles/:id/documents', upload.single('file'), async (req: Request, res: Response): Promise<any> => {
+  const vehicleId = req.params.id;
+  const file = req.file;
+
+  if (!file) {
+    return res.status(400).json({ error: 'No file uploaded' });
+  }
+
+  // In a real app, upload to Cloud Storage and save URL to DB
+  console.log(`Uploaded document for vehicle ${vehicleId}: ${file.originalname}`);
+
+  return res.status(200).json({ success: true, url: `https://storage.googleapis.com/drivepro-docs/${file.filename}` });
+});
+
+// Checkout Session Endpoint
+app.post('/payments/create-checkout', async (req: Request, res: Response): Promise<any> => {
+  const { studentId, amount } = req.body;
+  try {
+    const session = await createCheckoutSession(studentId, amount);
+    return res.status(200).json({ url: session.url });
+  } catch (error: any) {
+    console.error('Checkout creation failed:', error.message);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// Theory Questions Endpoint
+app.get('/theory/questions', async (req: Request, res: Response): Promise<any> => {
+  try {
+    const questions = await prisma.theoryQuestion.findMany();
+    return res.status(200).json(questions);
+  } catch (error) {
+    console.error('Error fetching theory questions:', error);
+    return res.status(500).json({ error: 'Failed to fetch theory questions' });
+  }
+});
+
+// Theory Result Endpoint
+app.post('/theory/results', async (req: Request, res: Response): Promise<any> => {
+  const { student_id, score, total, mode } = req.body;
+  try {
+    const result = await prisma.theoryResult.create({
+      data: {
+        student_id,
+        score,
+        total,
+        mode,
+      },
+    });
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error('Error saving theory result:', error);
+    return res.status(500).json({ error: 'Failed to save theory result' });
+  }
+});
+
+// Dashcam Sync Endpoint
+app.post('/lessons/:id/sync-dashcam', async (req: Request, res: Response): Promise<any> => {
+  const lessonId = req.params.id as string;
+  const { dashcam_start_time, school_id } = req.body;
+
+  try {
+    const activeSession = await prisma.lessonSession.findFirst({
+      where: { lesson_id: lessonId, school_id: school_id as string },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (activeSession) {
+      await prisma.lessonSession.update({
+        where: { id: activeSession.id },
+        data: { dashcam_start_time: new Date(dashcam_start_time) },
+      });
+      return res.status(200).json({ success: true });
+    }
+    return res.status(404).json({ error: 'No active session found' });
+  } catch (error) {
+    console.error('Error syncing dashcam:', error);
+    return res.status(500).json({ error: 'Failed to sync dashcam' });
+  }
+});
 
 // Heartbeat Endpoint
 app.post('/lessons/:id/heartbeat', async (req: Request, res: Response): Promise<any> => {
@@ -29,7 +130,33 @@ app.post('/lessons/:id/heartbeat', async (req: Request, res: Response): Promise<
     return res.status(400).json({ error: 'school_id is required' });
   }
 
-  // TODO: Save GPS route to DB via Database package
+  // Save GPS route to DB
+  try {
+    const activeSession = await prisma.lessonSession.findFirst({
+      where: {
+        lesson_id: lessonId,
+        school_id: school_id as string,
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+
+    if (activeSession) {
+      // PostGIS LineString requires at least 2 points.
+      // For the first point, we create a zero-length line with two identical points.
+      await prisma.$executeRaw`
+        UPDATE "LessonSession"
+        SET gps_route = CASE
+          WHEN gps_route IS NULL THEN ST_GeomFromText(${`LINESTRING(${coordinates.longitude} ${coordinates.latitude}, ${coordinates.longitude} ${coordinates.latitude})`}, 4326)
+          ELSE ST_AddPoint(gps_route::geometry, ST_MakePoint(${coordinates.longitude}, ${coordinates.latitude})::geometry)
+        END
+        WHERE id = ${activeSession.id}
+      `;
+    }
+  } catch (error) {
+    console.error('Error saving GPS route:', error);
+  }
 
   // Save FaultPins to DB
   if (faultPins && Array.isArray(faultPins) && faultPins.length > 0) {
@@ -42,7 +169,7 @@ app.post('/lessons/:id/heartbeat', async (req: Request, res: Response): Promise<
           lesson_id: lessonId as string,
           school_id: school_id
           lesson_id: lessonId,
-          school_id: school_id as string
+          school_id: school_id as string,
         },
         orderBy: {
           createdAt: 'desc'
@@ -51,14 +178,23 @@ app.post('/lessons/:id/heartbeat', async (req: Request, res: Response): Promise<
 
       if (activeSession) {
         await prisma.faultPin.createMany({
-          data: faultPins.map((pin: any) => ({
-            school_id: String(school_id),
-            lesson_session_id: activeSession.id,
-            category: pin.category,
-            timestamp: new Date(pin.timestamp),
-            latitude: pin.location.latitude,
-            longitude: pin.location.longitude
-          }))
+          data: faultPins.map((pin: any) => {
+            let video_offset_seconds = null;
+            if (activeSession.dashcam_start_time) {
+              video_offset_seconds = Math.floor(
+                (new Date(pin.timestamp).getTime() - activeSession.dashcam_start_time.getTime()) / 1000
+              );
+            }
+            return {
+              school_id: school_id,
+              lesson_session_id: activeSession.id,
+              category: pin.category,
+              timestamp: new Date(pin.timestamp),
+              latitude: pin.location.latitude,
+              longitude: pin.location.longitude,
+              video_offset_seconds,
+            };
+          }),
         });
       } else {
         console.warn(`No active LessonSession found for lesson ${lessonId}`);
@@ -242,6 +378,30 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 8080;
+
+// Schedule lesson reminders (every day at 8 AM)
+cron.schedule('0 8 * * *', async () => {
+  console.log('Running daily lesson reminders...');
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  tomorrow.setHours(0, 0, 0, 0);
+
+  const dayAfterTomorrow = new Date(tomorrow);
+  dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 1);
+
+  const lessons = await prisma.lesson.findMany({
+    where: {
+      startTime: {
+        gte: tomorrow,
+        lt: dayAfterTomorrow,
+      },
+    },
+  });
+
+  for (const lesson of lessons) {
+    await sendLessonReminder(lesson.id);
+  }
+});
 
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
