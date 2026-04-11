@@ -1,0 +1,26 @@
+npm warn Unknown project config "auto-install-peers". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> with-tailwind@1.0.0 dev
+> turbo run dev --filter=student
+
+• turbo 2.9.6
+
+   • Packages in scope: student
+   • Running dev in 1 packages
+   • Remote caching disabled
+
+student:dev: cache bypass, force executing 5c9746c8aba6692a
+student:dev: npm warn Unknown project config "auto-install-peers". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+student:dev:
+student:dev: > student@0.1.0 dev
+student:dev: > next dev
+student:dev:
+student:dev: ▲ Next.js 16.2.1 (Turbopack)
+student:dev: - Local:         http://localhost:3000
+student:dev: - Network:       http://192.168.0.2:3000
+student:dev: ✓ Ready in 584ms
+student:dev:
+
+ Tasks:    1 successful, 1 total
+Cached:    0 cached, 1 total
+  Time:    2m1.48s

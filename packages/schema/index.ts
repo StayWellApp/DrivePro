@@ -12,7 +12,29 @@ export const StudentRegistrationSchema = z.object({
   }),
 });
 
+export const TelemetrySyncSchema = z.object({
+  coordinates: z.array(
+    z.object({
+      lat: z.number(),
+      lng: z.number(),
+      timestamp: z.string(),
+    })
+  ),
+  faults: z.array(
+    z.object({
+      type: z.string(),
+      severity: z.enum(["minor", "serious", "dangerous"]),
+      timestamp: z.string(),
+      coordinate: z.object({
+        lat: z.number(),
+        lng: z.number(),
+      }),
+    })
+  ),
+});
+
 export type TopUpFormData = z.infer<typeof TopUpSchema>;
 export type StudentRegistrationFormData = z.infer<
   typeof StudentRegistrationSchema
 >;
+export type TelemetrySyncData = z.infer<typeof TelemetrySyncSchema>;

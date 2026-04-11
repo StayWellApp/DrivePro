@@ -56,6 +56,7 @@ model Student {
   school             School   @relation(fields: [school_id], references: [id])
   name               String?
   balance            Float    @default(0)
+  lessonCredits      Int      @default(0)
   courseType         CourseType
   stripe_customer_id String?
   createdAt          DateTime @default(now())
@@ -64,6 +65,7 @@ model Student {
   lessons       Lesson[]
   payments      Payment[]
   theoryResults TheoryResult[]
+  documents     Document[]
 }
 
 enum CourseType {
@@ -92,11 +94,14 @@ model Vehicle {
   school_id          String
   school             School    @relation(fields: [school_id], references: [id])
   licensePlate       String
+  vin                String?
   make               String
   model              String
+  lastServiceDate    DateTime?
   nextServiceDate    DateTime?
   nextServiceMileage Int?
-  stk_expiry         DateTime?
+  insuranceExpiry    DateTime?
+  nextTechnicalInspection DateTime?
   current_mileage    Int       @default(0)
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
@@ -116,10 +121,12 @@ model Lesson {
   vehicle       Vehicle  @relation(fields: [vehicle_id], references: [id])
   startTime     DateTime
   endTime       DateTime?
+  videoTimestampOffset Float?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   sessions LessonSession[]
+  telemetryChunks TelemetryChunk[]
 }
 
 model LessonSession {
@@ -181,4 +188,37 @@ model TheoryResult {
   total      Int
   mode       String // 'practice' or 'mock'
   createdAt  DateTime @default(now())
+}
+
+model TelemetryChunk {
+  id          String   @id @default(uuid())
+  lesson_id   String
+  lesson      Lesson   @relation(fields: [lesson_id], references: [id])
+  coordinates Json
+  faults      Json
+  createdAt   DateTime @default(now())
+}
+
+model Document {
+  id          String   @id @default(uuid())
+  student_id  String
+  student     Student  @relation(fields: [student_id], references: [id])
+  type        DocumentType
+  fileUrl     String
+  expiryDate  DateTime?
+  status      DocumentStatus @default(PENDING)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+enum DocumentType {
+  ID_CARD
+  MEDICAL_CERTIFICATE
+  DRIVERS_LICENSE
+}
+
+enum DocumentStatus {
+  PENDING
+  VERIFIED
+  REJECTED
 }
