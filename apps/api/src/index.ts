@@ -164,6 +164,10 @@ app.post('/lessons/:id/heartbeat', async (req: Request, res: Response): Promise<
       // Find the active LessonSession for this lesson
       const activeSession = await prisma.lessonSession.findFirst({
         where: {
+          lesson_id: String(lessonId),
+          school_id: String(school_id)
+          lesson_id: lessonId as string,
+          school_id: school_id
           lesson_id: lessonId,
           school_id: school_id as string,
         },
@@ -212,6 +216,112 @@ app.post('/lessons/:id/heartbeat', async (req: Request, res: Response): Promise<
   return res.status(200).json({ success: true });
 });
 
+// Sync Video to Fault Pins
+app.post('/lessons/:id/sync-video', async (req: Request, res: Response): Promise<any> => {
+  const lessonId = req.params.id;
+  const { school_id, video_file_name, video_start_timestamp } = req.body;
+
+  if (!school_id || !video_file_name || !video_start_timestamp) {
+    return res.status(400).json({ error: 'school_id, video_file_name, and video_start_timestamp are required' });
+  }
+
+  try {
+    const videoStart = new Date(video_start_timestamp);
+
+    // Find the active LessonSession for this lesson
+    const session = await prisma.lessonSession.findFirst({
+      where: {
+        lesson_id: String(lessonId),
+        school_id: String(school_id)
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+
+    if (!session) {
+      return res.status(404).json({ error: 'No active LessonSession found for this lesson' });
+    }
+
+    // Find all FaultPins for this session
+    const faultPins = await prisma.faultPin.findMany({
+      where: {
+        lesson_session_id: session.id,
+        school_id: String(school_id)
+      }
+    });
+
+    // Calculate offset and update each FaultPin
+    const updatePromises = faultPins.map(pin => {
+      const offsetSeconds = Math.max(0, Math.floor((pin.timestamp.getTime() - videoStart.getTime()) / 1000));
+      return prisma.faultPin.update({
+        where: { id: pin.id },
+        data: {
+          video_file_name: video_file_name,
+          video_offset_seconds: offsetSeconds
+        }
+      });
+    });
+
+    await Promise.all(updatePromises);
+
+    return res.status(200).json({ success: true, updatedPins: faultPins.length });
+  } catch (error) {
+    console.error('Error syncing video to fault pins:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get Replay Data
+app.get('/lessons/:id/replay-data', async (req: Request, res: Response): Promise<any> => {
+  const lessonId = req.params.id;
+  const school_id = req.query.school_id as string;
+
+  if (!school_id) {
+    return res.status(400).json({ error: 'school_id is required as a query parameter' });
+  }
+
+  try {
+    const session = await prisma.lessonSession.findFirst({
+      where: {
+        lesson_id: String(lessonId),
+        school_id: String(school_id)
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+
+    if (!session) {
+      return res.status(404).json({ error: 'No active LessonSession found for this lesson' });
+    }
+
+    const faultPins = await prisma.faultPin.findMany({
+      where: {
+        lesson_session_id: session.id,
+        school_id: String(school_id)
+      },
+      orderBy: {
+        timestamp: 'asc'
+      }
+    });
+
+    // Map fault pins to include video_timestamp as requested
+    const formattedFaultPins = faultPins.map(pin => ({
+      ...pin,
+      video_timestamp: pin.video_offset_seconds
+    }));
+
+    // TODO: Retrieve actual GPS points when implemented.
+    const gpsPoints: any[] = [];
+
+    return res.status(200).json({
+      gpsPoints: gpsPoints,
+      faultPins: formattedFaultPins
+    });
+  } catch (error) {
+    console.error('Error getting replay data:', error);
+    return res.status(500).json({ error: 'Internal server error' });
 // Report Endpoint
 app.get('/lessons/:id/report', async (req: Request, res: Response): Promise<any> => {
   const lessonId = req.params.id as string;

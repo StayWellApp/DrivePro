@@ -17,6 +17,7 @@
     "lint-staged": "^16.4.0",
     "prettier": "^3.6.0",
     "prettier-plugin-tailwindcss": "^0.7.1",
+    "prisma": "^6.4.1",
     "turbo": "^2.8.21"
   },
   "engines": {
@@ -30,7 +31,7 @@
   "description": "This Turborepo starter is maintained by the Turborepo core team.",
   "main": "index.js",
   "dependencies": {
-    "@prisma/client": "^6.19.2",
+    "@prisma/client": "^6.4.1",
     "acorn": "^8.16.0",
     "acorn-jsx": "^5.3.2",
     "ajv": "^6.14.0",
@@ -210,7 +211,6 @@
     "postcss": "^8.5.8",
     "postcss-value-parser": "^4.2.0",
     "prelude-ls": "^1.2.1",
-    "prisma": "^6.4.1",
     "prop-types": "^15.8.1",
     "punycode": "^2.3.1",
     "queue-microtask": "^1.2.3",
