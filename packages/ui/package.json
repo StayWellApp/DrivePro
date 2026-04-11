@@ -24,11 +24,16 @@
   "peerDependencies": {
     "react": "^19"
   },
+  "dependencies": {
+    "leaflet": "^1.9.4",
+    "react-leaflet": "^5.0.0"
+  },
   "devDependencies": {
     "@repo/eslint-config": "*",
     "@repo/tailwind-config": "*",
     "@repo/typescript-config": "*",
     "@tailwindcss/cli": "^4.1.5",
+    "@types/leaflet": "^1.9.12",
     "@types/react": "^19.1.0",
     "eslint": "^9.39.1",
     "tailwindcss": "^4.1.5",
