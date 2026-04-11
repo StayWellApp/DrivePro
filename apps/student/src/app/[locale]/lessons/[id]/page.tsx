@@ -1,16 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
-import dynamic from 'next/dynamic';
 import Link from "next/link";
-import ErrorBoundary from "@/components/ErrorBoundary";
 import DashcamToast from "@/components/DashcamToast";
-
-// Use a type-safe dynamic import if possible, or cast to any to bypass strict check for now
-const LessonReplay = dynamic<any>(
-  () => import('@repo/ui').then((mod) => mod.LessonReplay),
-  { ssr: false }
-);
+import ReplayWrapper from "@/components/ReplayWrapper";
 
 export default async function LessonDetailPage({
   params,
@@ -94,18 +87,16 @@ export default async function LessonDetailPage({
 
       <main className="flex-1 p-8">
         <div className="max-w-7xl mx-auto">
-           <ErrorBoundary>
-              <LessonReplay
-                  route={routePoints}
-                  faults={faults}
-                  labels={{
-                    start: t("start"),
-                    end: t("end"),
-                    replayAnalysis: t("replayAnalysis"),
-                    replayIncident: t("replayIncident")
-                  }}
-              />
-           </ErrorBoundary>
+           <ReplayWrapper
+              route={routePoints}
+              faults={faults}
+              labels={{
+                start: t("start"),
+                end: t("end"),
+                replayAnalysis: t("replayAnalysis"),
+                replayIncident: t("replayIncident")
+              }}
+           />
         </div>
       </main>
     </div>
