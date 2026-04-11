@@ -79,7 +79,7 @@ steps:
         # Retry npm ci if it fails due to transient network issues (ECONNRESET)
         npm ci || npm ci
         cd packages/database
-        npx prisma db push
+        npx prisma db push --accept-data-loss
     secretEnv: ['DB_USER', 'DB_PASS']
     waitFor: ['start-proxy']
 
