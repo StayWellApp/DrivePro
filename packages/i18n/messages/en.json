@@ -35,6 +35,8 @@
     "passProbability": "Pass Probability",
     "sectionsDone": "Sections Done",
     "intelligenceInsights": "DrivePro Intelligence Insights"
+    "shareProgress": "Share Progress",
+    "sponsorView": "Sponsor/Parent Access",
   },
   "Finances": {
     "title": "Finances",

@@ -22,6 +22,8 @@ model User {
   lastName    String?
   phoneNumber String?
   role        Role
+  branch_id   String?
+  branch      Branch?  @relation(fields: [branch_id], references: [id])
   school_id   String?
   school      School?  @relation(fields: [school_id], references: [id])
   createdAt   DateTime @default(now())
@@ -42,6 +44,7 @@ model School {
   students    Student[]
   instructors Instructor[]
   vehicles    Vehicle[]
+  branches    Branch[]
   lessons     Lesson[]
   payments    Payment[]
 }
@@ -58,6 +61,8 @@ model Student {
   balance            Float    @default(0)
   lessonCredits      Int      @default(0)
   courseType         CourseType
+  branch_id          String?
+  branch             Branch?    @relation(fields: [branch_id], references: [id])
   stripe_customer_id String?
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
@@ -65,6 +70,8 @@ model Student {
   lessons       Lesson[]
   payments      Payment[]
   theoryResults TheoryResult[]
+  examAttempts StudentExamAttempt[]
+  sponsorLinks  SponsorLink[]
   documents     Document[]
 }
 
@@ -79,6 +86,8 @@ model Instructor {
   user_id      String   @unique
   user         User     @relation(fields: [user_id], references: [id])
   school_id    String
+  branch_id    String?
+  branch       Branch?  @relation(fields: [branch_id], references: [id])
   school       School   @relation(fields: [school_id], references: [id])
   name         String?
   availability Json?
@@ -103,6 +112,8 @@ model Vehicle {
   insuranceExpiry    DateTime?
   nextTechnicalInspection DateTime?
   current_mileage    Int       @default(0)
+  branch_id          String?
+  branch             Branch?    @relation(fields: [branch_id], references: [id])
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
@@ -124,6 +135,10 @@ model Lesson {
   videoTimestampOffset Float?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+  status        LessonStatus @default(SCHEDULED)
+  type          LessonType @default(PRACTICE)
+  branch_id     String?
+  branch        Branch? @relation(fields: [branch_id], references: [id])
 
   sessions LessonSession[]
   telemetryChunks TelemetryChunk[]
@@ -177,6 +192,7 @@ model TheoryQuestion {
   options   Json
   answer    String
   createdAt DateTime @default(now())
+  language  String   @default("cs")
   updatedAt DateTime @updatedAt
 }
 
@@ -221,4 +237,52 @@ enum DocumentStatus {
   PENDING
   VERIFIED
   REJECTED
+}
+
+model StudentExamAttempt {
+  id         String   @id @default(uuid())
+  student_id String
+  student    Student  @relation(fields: [student_id], references: [id])
+  score      Int
+  total      Int
+  passed     Boolean
+  answers    Json     // Detailed answers for review
+  createdAt  DateTime @default(now())
+}
+
+enum LessonStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum LessonType {
+  PRACTICE
+  MOCK_EXAM
+}
+
+model Branch {
+  id        String   @id @default(uuid())
+  name      String
+  school_id String
+  school    School   @relation(fields: [school_id], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users       User[]
+  students    Student[]
+  instructors Instructor[]
+  vehicles    Vehicle[]
+  lessons     Lesson[]
+}
+
+model SponsorLink {
+  id         String   @id @default(uuid())
+  token      String   @unique
+  student_id String
+  student    Student  @relation(fields: [student_id], references: [id])
+  expiresAt  DateTime
+  passcode   String?
+  createdAt  DateTime @default(now())
 }
