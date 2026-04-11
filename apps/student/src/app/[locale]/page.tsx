@@ -1,18 +1,18 @@
-import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
+import { prisma } from "@repo/database";
 import { getTranslations } from "next-intl/server";
 import Link from "next/link";
-import { auth } from "@/auth";
 import { redirect } from "next/navigation";
+import ProgressRadarChart from "@/components/ProgressRadarChart";
 
-export default async function StudentHub({
-  params,
+export default async function DashboardPage({
+  params: { locale },
 }: {
-  params: Promise<{ locale: string }>;
+  params: { locale: string };
 }) {
-  const { locale } = await params;
   const session = await auth();
 
-  if (!session?.user) {
+  if (!session || !session.user) {
     redirect(`/${locale}/login`);
   }
 
@@ -29,10 +29,15 @@ export default async function StudentHub({
           include: {
             instructor: true,
             vehicle: true,
-            sessions: true,
+            telemetryChunks: true,
+            sessions: {
+              include: {
+                faultPins: true
+              }
+            }
           },
           orderBy: {
-            startTime: "asc",
+            startTime: "desc",
           },
         },
         theoryResults: true,
@@ -61,7 +66,7 @@ export default async function StudentHub({
   const now = new Date();
   const nextLesson = student.lessons.find((l) => l.startTime > now);
   const completedLessons = student.lessons.filter(
-    (l) => l.endTime && l.endTime <= now,
+    (l) => (l.endTime && l.endTime <= now) || l.telemetryChunks.length > 0
   );
 
   const totalMinutes = completedLessons.reduce((acc, lesson) => {
@@ -74,6 +79,46 @@ export default async function StudentHub({
   }, 0);
   const totalHours = Math.floor(totalMinutes / 60);
 
+  // Radar Chart Data Logic
+  const last5Lessons = completedLessons.slice(0, 5);
+  const categories = [
+    "Observation",
+    "Vehicle Control",
+    "Speed Management",
+    "Awareness",
+    "Signage",
+  ];
+
+  const faultCounts: Record<string, number> = {};
+  categories.forEach(c => faultCounts[c] = 0);
+
+  last5Lessons.forEach(lesson => {
+    // Count from sessions/faultPins
+    lesson.sessions.forEach(session => {
+       session.faultPins.forEach(pin => {
+          if (categories.includes(pin.category)) {
+             faultCounts[pin.category] += (pin.riskScore && pin.riskScore > 50 ? 3 : 1);
+          }
+       });
+    });
+    // Count from telemetryChunks
+    lesson.telemetryChunks.forEach((chunk: any) => {
+       if (Array.isArray(chunk.faults)) {
+          chunk.faults.forEach((f: any) => {
+             if (categories.includes(f.type)) {
+                faultCounts[f.type] += (f.severity === 'dangerous' ? 5 : f.severity === 'serious' ? 3 : 1);
+             }
+          });
+       }
+    });
+  });
+
+  const radarData = categories.map(cat => ({
+    subject: cat,
+    A: Math.max(20, 100 - (faultCounts[cat] * 4)), // Score starts at 100, drops per fault
+    fullMark: 100,
+  }));
+
   const latestMock = student.theoryResults
     .filter((r) => r.mode === "mock")
     .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0];
@@ -85,6 +130,7 @@ export default async function StudentHub({
   return (
     <div className="p-8 max-w-7xl mx-auto w-full space-y-8">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* Header Section */}
         <section className="lg:col-span-7 flex flex-col justify-between p-8 rounded-xl bg-gradient-to-br from-[#0F172A] to-[#1a2540] text-white relative overflow-hidden group border border-slate-800">
           <div className="absolute top-0 right-0 w-64 h-64 bg-teal-500/10 blur-[80px] rounded-full -mr-20 -mt-20"></div>
           <div className="relative z-10">
@@ -106,7 +152,7 @@ export default async function StudentHub({
                   }).format(nextLesson.startTime)}
                 </h3>
                 <p className="text-slate-300 text-lg mb-8">
-                  Lesson #{student.lessons.indexOf(nextLesson) + 1}
+                   Lesson #{completedLessons.length + 1}
                 </p>
                 <div className="flex items-center gap-12">
                   <div className="flex items-center gap-3">
@@ -154,19 +200,32 @@ export default async function StudentHub({
           </Link>
         </section>
 
+        {/* Finance & Theory Shortcuts */}
         <section className="lg:col-span-5 grid grid-cols-1 gap-4">
           <div className="p-6 bg-white rounded-xl shadow-sm border border-slate-200">
-            <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">
-              Account Balance
-            </p>
-            <p className="text-3xl font-black text-slate-900">
-              {student.balance} CZK
-            </p>
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">
+                   Credits
+                </p>
+                <p className="text-3xl font-black text-teal-600">
+                  {student.lessonCredits}
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">
+                  Balance
+                </p>
+                <p className="text-xl font-bold text-slate-900">
+                  {student.balance} CZK
+                </p>
+              </div>
+            </div>
             <Link
               href={`/${locale}/topup`}
-              className="mt-4 inline-block text-sm font-bold text-teal-600 hover:text-teal-700"
+              className="mt-4 inline-block text-sm font-bold text-slate-900 hover:text-teal-600 transition-colors"
             >
-              Top up account →
+              Get more credits →
             </Link>
           </div>
           <Link
@@ -190,79 +249,52 @@ export default async function StudentHub({
           </Link>
         </section>
 
-        <section className="lg:col-span-12 bg-white p-8 rounded-xl shadow-sm border border-slate-200">
-          <div className="flex items-center justify-between mb-10">
-            <div>
-              <h4 className="text-2xl font-extrabold tracking-tight">
-                {t("progressTracker")}
-              </h4>
-              <p className="text-sm text-slate-500">{t("journeyProgress")}</p>
+        {/* Intelligence Performance Radar */}
+        <section className="lg:col-span-4 bg-[#0F172A] p-8 rounded-xl shadow-xl border border-white/5 flex flex-col justify-center">
+            <h4 className="text-white font-black uppercase tracking-widest text-xs mb-6 flex items-center gap-2">
+                <span className="flex h-2 w-2 rounded-full bg-teal-500 animate-pulse"></span>
+                Skills Intelligence
+            </h4>
+            <ProgressRadarChart data={radarData} />
+            <p className="text-center text-slate-500 text-[10px] font-bold uppercase tracking-tighter mt-4">
+                Based on last 5 sessions
+            </p>
+        </section>
+
+        {/* Completed Lessons */}
+        <section className="lg:col-span-8 bg-white p-8 rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+           <h4 className="text-2xl font-extrabold tracking-tight mb-8">
+            RECENT SESSIONS
+          </h4>
+          {completedLessons.length === 0 ? (
+             <p className="text-slate-500 italic text-center py-8">No lessons completed yet.</p>
+          ) : (
+            <div className="space-y-4">
+              {completedLessons.slice(0, 3).map((lesson) => (
+                <Link
+                  key={lesson.id}
+                  href={`/${locale}/lessons/${lesson.id}`}
+                  className="p-4 border border-slate-100 rounded-xl hover:border-teal-500/30 transition-all group flex justify-between items-center"
+                >
+                  <div className="flex gap-6 items-center">
+                    <div className="text-center min-w-[60px]">
+                         <p className="text-[10px] font-black uppercase text-slate-400">
+                            {lesson.startTime.toLocaleDateString(locale, { month: 'short' })}
+                         </p>
+                         <p className="text-xl font-black text-slate-900 leading-none">
+                            {lesson.startTime.getDate()}
+                         </p>
+                    </div>
+                    <div>
+                        <p className="font-bold text-slate-900">Session Replay</p>
+                        <p className="text-xs text-slate-400 font-medium">with {lesson.instructor.name}</p>
+                    </div>
+                  </div>
+                  <span className="material-symbols-outlined text-teal-500 opacity-0 group-hover:opacity-100 transition-all">play_circle</span>
+                </Link>
+              ))}
             </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-            <div className="flex items-center gap-8">
-              <div className="relative w-40 h-40 flex items-center justify-center">
-                <svg className="w-full h-full -rotate-90">
-                  <circle
-                    className="text-slate-100"
-                    cx="80"
-                    cy="80"
-                    fill="transparent"
-                    r="70"
-                    stroke="currentColor"
-                    strokeWidth="12"
-                  ></circle>
-                  <circle
-                    className="text-teal-500"
-                    cx="80"
-                    cy="80"
-                    fill="transparent"
-                    r="70"
-                    stroke="currentColor"
-                    strokeDasharray="440"
-                    strokeDashoffset={
-                      440 - (440 * Math.min(totalHours, 28)) / 28
-                    }
-                    strokeWidth="12"
-                    strokeLinecap="round"
-                  ></circle>
-                </svg>
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <p className="text-3xl font-black">{totalHours}</p>
-                  <p className="text-[10px] font-bold uppercase text-slate-500">
-                    of 28 Hours
-                  </p>
-                </div>
-              </div>
-              <div>
-                <h5 className="font-bold mb-2">{t("drivingHours")}</h5>
-                <p className="text-sm text-slate-500 leading-relaxed">
-                  {t("drivingHoursDesc")}
-                </p>
-              </div>
-            </div>
-            <div className="space-y-8">
-              <div>
-                <div className="flex justify-between mb-3">
-                  <p className="text-sm font-bold flex items-center gap-2">
-                    <span className="material-symbols-outlined text-lg text-blue-600">
-                      school
-                    </span>
-                    {t("theoryProgress")}
-                  </p>
-                  <p className="text-sm font-black text-teal-600">
-                    {theoryProgress}%
-                  </p>
-                </div>
-                <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-teal-500 rounded-full"
-                    style={{ width: `${theoryProgress}%` }}
-                  ></div>
-                </div>
-              </div>
-            </div>
-          </div>
+          )}
         </section>
       </div>
     </div>

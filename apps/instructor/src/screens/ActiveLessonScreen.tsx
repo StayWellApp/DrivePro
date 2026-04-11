@@ -16,12 +16,10 @@ import io from "socket.io-client";
 
 const FAULT_CATEGORIES = [
   "Observation",
-  "Junctions",
-  "Roundabouts",
-  "Parking",
-  "Speed",
-  "Positioning",
-  "Signalling",
+  "Vehicle Control",
+  "Speed Management",
+  "Awareness",
+  "Signage",
 ];
 
 // Kinetic Precision Colors
@@ -29,8 +27,9 @@ const COLORS = {
   primary: "#0F172A", // Deep Navy
   secondary: "#2DD4BF", // Electric Teal
   surface: "#F7F9FB",
-  major: "#EF4444", // Red
-  minor: "#2DD4BF", // Teal (Electric Teal)
+  dangerous: "#EF4444", // Red
+  serious: "#F59E0B", // Orange/Amber
+  minor: "#2DD4BF", // Teal
   textMain: "#191C1E",
   textVariant: "#45464D",
   white: "#FFFFFF",
@@ -39,7 +38,8 @@ const COLORS = {
 const MOCK_LESSON_ID = "lesson-123";
 const MOCK_SCHOOL_ID = "school-456";
 const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://10.0.2.2:8080";
-const FAULT_QUEUE_KEY = "@fault_queue";
+const TELEMETRY_STORAGE_KEY = "@current_lesson_telemetry";
+const SYNC_QUEUE_KEY = "@sync_queue";
 
 const socket = io(API_URL);
 const BACKGROUND_LOCATION_TASK = "BACKGROUND_LOCATION_TASK";
@@ -48,46 +48,50 @@ TaskManager.defineTask(
   BACKGROUND_LOCATION_TASK,
   async ({ data, error }: any) => {
     if (error) {
-      console.error("Background location task error:", error);
+      console.error("Background location error:", error);
       return;
     }
     if (data) {
       const { locations } = data;
-      const location = locations[0];
-      if (location) {
-        // In a real app, we would queue this for heartbeat sync
-        console.log("Background location received:", location.coords);
+      try {
+        const stored = await AsyncStorage.getItem(TELEMETRY_STORAGE_KEY);
+        const telemetry = stored ? JSON.parse(stored) : [];
+        const newPoints = locations.map((loc: any) => ({
+          lat: loc.coords.latitude,
+          lng: loc.coords.longitude,
+          timestamp: new Date(loc.timestamp).toISOString(),
+        }));
 
-        // Attempt to send a minimal heartbeat if possible
-        try {
-          await fetch(`${API_URL}/lessons/${MOCK_LESSON_ID}/heartbeat`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              school_id: MOCK_SCHOOL_ID,
-              coordinates: {
-                latitude: location.coords.latitude,
-                longitude: location.coords.longitude,
-              },
-            }),
-          });
-        } catch (e) {
-          // Silently fail in background
+        // Zero-movement filtering: Only add if changed or time gap > 30s
+        const lastPoint = telemetry[telemetry.length - 1];
+        const filteredNewPoints = newPoints.filter((p: any) => {
+           if (!lastPoint) return true;
+           const dist = Math.sqrt(Math.pow(p.lat - lastPoint.lat, 2) + Math.pow(p.lng - lastPoint.lng, 2));
+           return dist > 0.00001; // Approx 1 meter
+        });
+
+        if (filteredNewPoints.length > 0) {
+            await AsyncStorage.setItem(TELEMETRY_STORAGE_KEY, JSON.stringify([...telemetry, ...filteredNewPoints]));
         }
+      } catch (err) {
+        console.error("Failed to store background telemetry:", err);
       }
     }
-  },
+  }
 );
 
 export function ActiveLessonScreen() {
-  const [isSocketConnected, setIsSocketConnected] = useState(socket.connected);
-  const [hasLocationPermission, setHasLocationPermission] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(FAULT_CATEGORIES[0]);
+  const [isSocketConnected, setIsSocketConnected] = useState(false);
+  const [isLessonActive, setIsLessonActive] = useState(false);
+  const [currentFaults, setCurrentFaults] = useState<any[]>([]);
 
   useEffect(() => {
     socket.on("connect", () => {
       setIsSocketConnected(true);
-      syncOfflineFaults();
+      socket.emit("join_school", MOCK_SCHOOL_ID);
+      // Auto-retry queue when connection restored
+      processSyncQueue();
     });
 
     socket.on("disconnect", () => {
@@ -100,175 +104,129 @@ export function ActiveLessonScreen() {
     };
   }, []);
 
-  useEffect(() => {
-    (async () => {
-      const { status: fgStatus } =
-        await Location.requestForegroundPermissionsAsync();
-      if (fgStatus !== "granted") {
-        Alert.alert(
-          "Permission Denied",
-          "Foreground location permission is required",
-        );
-        return;
-      }
-
-      const { status: bgStatus } =
-        await Location.requestBackgroundPermissionsAsync();
-      if (bgStatus !== "granted") {
-        console.warn("Background location permission denied");
-      }
-
-      setHasLocationPermission(true);
-
-      // Start background location updates
-      await Location.startLocationUpdatesAsync("BACKGROUND_LOCATION_TASK", {
-        accuracy: Location.Accuracy.High,
-        timeInterval: 2000,
-        distanceInterval: 5,
-        foregroundService: {
-          notificationTitle: "DrivePro Active Tracking",
-          notificationBody: "Recording lesson telemetry...",
-          notificationColor: COLORS.secondary,
-        },
-      });
-    })();
-  }, []);
-
-  const syncOfflineFaults = async () => {
+  const processSyncQueue = async () => {
     try {
-      const queueJson = await AsyncStorage.getItem(FAULT_QUEUE_KEY);
-      if (queueJson) {
-        const queue = JSON.parse(queueJson);
-        if (queue && queue.length > 0) {
-          let currentCoords = { latitude: 0, longitude: 0 };
-          try {
-            const loc = await Location.getCurrentPositionAsync({
-              accuracy: Location.Accuracy.Low,
-            });
-            currentCoords = {
-              latitude: loc.coords.latitude,
-              longitude: loc.coords.longitude,
-            };
-          } catch (e) {}
+      const queueJson = await AsyncStorage.getItem(SYNC_QUEUE_KEY);
+      if (!queueJson) return;
 
-          const response = await fetch(
-            `${API_URL}/lessons/${MOCK_LESSON_ID}/heartbeat`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                school_id: MOCK_SCHOOL_ID,
-                coordinates: currentCoords,
-                faultPins: queue,
-              }),
-            },
-          );
+      const queue = JSON.parse(queueJson);
+      if (queue.length === 0) return;
 
-          if (response.ok) {
-            const currentQueueJson =
-              await AsyncStorage.getItem(FAULT_QUEUE_KEY);
-            const currentQueue = currentQueueJson
-              ? JSON.parse(currentQueueJson)
-              : [];
-            const remainingQueue = currentQueue.filter(
-              (p: any) =>
-                !queue.some(
-                  (syncedPin: any) =>
-                    syncedPin.timestamp === p.timestamp &&
-                    syncedPin.category === p.category,
-                ),
-            );
+      console.log(`Retrying sync for ${queue.length} items...`);
 
-            if (remainingQueue.length === 0) {
-              await AsyncStorage.removeItem(FAULT_QUEUE_KEY);
-            } else {
-              await AsyncStorage.setItem(
-                FAULT_QUEUE_KEY,
-                JSON.stringify(remainingQueue),
-              );
-            }
-          }
+      const remaining = [];
+      for (const item of queue) {
+        try {
+          const response = await fetch(`${API_URL}/lessons/${item.lessonId}/sync`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(item.data),
+          });
+          if (!response.ok) remaining.push(item);
+        } catch (e) {
+          remaining.push(item);
         }
       }
-    } catch (error) {
-      console.error("Error syncing offline faults:", error);
+
+      await AsyncStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify(remaining));
+      if (remaining.length === 0) {
+          Alert.alert("Sync Complete", "All pending lesson data has been uploaded.");
+      }
+    } catch (err) {
+      console.error("Error processing sync queue:", err);
     }
   };
 
-  const handleFaultTap = async (type: "major" | "minor") => {
-    if (type === "major") {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-      setTimeout(
-        () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy),
-        100,
-      );
-    } else {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    }
+  const startLesson = async () => {
+    const { status: fgStatus } = await Location.requestForegroundPermissionsAsync();
+    const { status: bgStatus } = await Location.requestBackgroundPermissionsAsync();
 
-    if (!hasLocationPermission) {
-      Alert.alert("Error", "Location permission is required.");
+    if (fgStatus !== "granted" || bgStatus !== "granted") {
+      Alert.alert("Permission Denied", "Location permissions are required for tracking.");
       return;
     }
 
-    let location;
+    await AsyncStorage.removeItem(TELEMETRY_STORAGE_KEY);
+    setCurrentFaults([]);
+
+    await Location.startLocationUpdatesAsync(BACKGROUND_LOCATION_TASK, {
+      accuracy: Location.Accuracy.High,
+      timeInterval: 5000,
+      distanceInterval: 5,
+      foregroundService: {
+        notificationTitle: "DrivePro Active Tracking",
+        notificationBody: "Recording lesson telemetry...",
+        notificationColor: COLORS.secondary,
+      },
+    });
+
+    setIsLessonActive(true);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
+
+  const endLesson = async () => {
+    setIsLessonActive(false);
+    await Location.stopLocationUpdatesAsync(BACKGROUND_LOCATION_TASK);
+
+    const telemetryJson = await AsyncStorage.getItem(TELEMETRY_STORAGE_KEY);
+    const telemetry = telemetryJson ? JSON.parse(telemetryJson) : [];
+
+    const syncData = {
+      coordinates: telemetry,
+      faults: currentFaults,
+    };
+
     try {
-      location = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.High,
+      const response = await fetch(`${API_URL}/lessons/${MOCK_LESSON_ID}/sync`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(syncData),
       });
-    } catch (e) {
-      Alert.alert("Error", "Could not get location.");
-      return;
+
+      if (response.ok) {
+        Alert.alert("Success", "Lesson data synced successfully");
+        await AsyncStorage.removeItem(TELEMETRY_STORAGE_KEY);
+      } else {
+        throw new Error("Server error");
+      }
+    } catch (error) {
+      console.log("Offline or sync failed, queueing...");
+      const queueJson = await AsyncStorage.getItem(SYNC_QUEUE_KEY);
+      const queue = queueJson ? JSON.parse(queueJson) : [];
+      queue.push({ lessonId: MOCK_LESSON_ID, data: syncData, timestamp: new Date().toISOString() });
+      await AsyncStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify(queue));
+
+      Alert.alert("Offline Mode", "Sync failed. Data stored locally and will retry when connection is restored.");
     }
+  };
+
+  const handleFaultTap = async (severity: "minor" | "serious" | "dangerous") => {
+    if (!isLessonActive) return;
+
+    if (severity === "dangerous") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    else if (severity === "serious") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    else Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    let location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
 
     const faultPin = {
-      category: selectedCategory,
-      type,
+      type: selectedCategory,
+      severity,
       timestamp: new Date().toISOString(),
-      location: {
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
+      coordinate: {
+        lat: location.coords.latitude,
+        lng: location.coords.longitude,
       },
     };
 
-    const saveToOfflineQueue = async (pin: any) => {
-      try {
-        const queueJson = await AsyncStorage.getItem(FAULT_QUEUE_KEY);
-        const queue = queueJson ? JSON.parse(queueJson) : [];
-        queue.push(pin);
-        await AsyncStorage.setItem(FAULT_QUEUE_KEY, JSON.stringify(queue));
-      } catch (err) {
-        console.error("Failed to save to offline queue", err);
-      }
-    };
+    setCurrentFaults(prev => [...prev, faultPin]);
 
-    if (!isSocketConnected) {
-      await saveToOfflineQueue(faultPin);
-      return;
-    }
-
-    try {
-      const response = await fetch(
-        `${API_URL}/lessons/${MOCK_LESSON_ID}/heartbeat`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            school_id: MOCK_SCHOOL_ID,
-            coordinates: {
-              latitude: location.coords.latitude,
-              longitude: location.coords.longitude,
-            },
-            faultPins: [faultPin],
-          }),
-        },
-      );
-
-      if (!response.ok) {
-        await saveToOfflineQueue(faultPin);
-      }
-    } catch (error) {
-      await saveToOfflineQueue(faultPin);
+    if (isSocketConnected) {
+      socket.emit("lesson_update", {
+        lessonId: MOCK_LESSON_ID,
+        faultPins: [faultPin],
+        coordinates: faultPin.coordinate,
+      });
     }
   };
 
@@ -276,31 +234,19 @@ export function ActiveLessonScreen() {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.title}>ACTIVE LESSON</Text>
-          <Text style={styles.subtitle}>Session: #L-12345</Text>
+          <Text style={styles.title}>{isLessonActive ? "RECORDING" : "ACTIVE LESSON"}</Text>
+          <Text style={styles.subtitle}>SESSION #L-12345</Text>
         </View>
 
         <View style={styles.categorySelector}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.scrollContent}
-          >
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
             {FAULT_CATEGORIES.map((cat) => (
               <TouchableOpacity
                 key={cat}
                 onPress={() => setSelectedCategory(cat)}
-                style={[
-                  styles.categoryChip,
-                  selectedCategory === cat && styles.categoryChipActive,
-                ]}
+                style={[styles.categoryChip, selectedCategory === cat && styles.categoryChipActive]}
               >
-                <Text
-                  style={[
-                    styles.categoryText,
-                    selectedCategory === cat && styles.categoryTextActive,
-                  ]}
-                >
+                <Text style={[styles.categoryText, selectedCategory === cat && styles.categoryTextActive]}>
                   {cat.toUpperCase()}
                 </Text>
               </TouchableOpacity>
@@ -309,53 +255,29 @@ export function ActiveLessonScreen() {
         </View>
 
         <View style={styles.hudGrid}>
-          <TouchableOpacity
-            style={[styles.hudButton, styles.buttonMinor]}
-            onPress={() => handleFaultTap("minor")}
-            activeOpacity={0.8}
-          >
+          <TouchableOpacity style={[styles.hudButton, styles.buttonMinor]} onPress={() => handleFaultTap("minor")}>
             <Text style={styles.hudButtonLabel}>MINOR</Text>
-            <Text style={styles.hudButtonMain}>FAULT</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[styles.hudButton, styles.buttonMajor]}
-            onPress={() => handleFaultTap("major")}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.hudButtonLabel}>MAJOR</Text>
-            <Text style={styles.hudButtonMain}>FAULT</Text>
+          <TouchableOpacity style={[styles.hudButton, styles.buttonSerious]} onPress={() => handleFaultTap("serious")}>
+            <Text style={styles.hudButtonLabel}>SERIOUS</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={[styles.hudButton, styles.buttonDangerous]} onPress={() => handleFaultTap("dangerous")}>
+            <Text style={styles.hudButtonLabel}>DANGEROUS</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.footer}>
-          <TouchableOpacity
-            style={styles.dashcamButton}
-            onPress={async () => {
-              try {
-                const response = await fetch(
-                  `${API_URL}/lessons/${MOCK_LESSON_ID}/sync-dashcam`,
-                  {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      school_id: MOCK_SCHOOL_ID,
-                      dashcam_start_time: new Date().toISOString(),
-                    }),
-                  },
-                );
-                if (response.ok) {
-                  Alert.alert("Success", "Dashcam sync point captured.");
-                } else {
-                  throw new Error("Sync failed");
-                }
-              } catch (e) {
-                Alert.alert("Error", "Failed to sync dashcam.");
-              }
-            }}
-          >
-            <Text style={styles.dashcamButtonText}>SYNC DASHCAM</Text>
-          </TouchableOpacity>
+          {!isLessonActive ? (
+            <TouchableOpacity style={styles.startButton} onPress={startLesson}>
+              <Text style={styles.actionButtonText}>START LESSON</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity style={styles.endButton} onPress={endLesson}>
+              <Text style={styles.actionButtonText}>END & SYNC</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     </SafeAreaView>
@@ -363,100 +285,25 @@ export function ActiveLessonScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: COLORS.surface,
-  },
-  container: {
-    flex: 1,
-    padding: 24,
-  },
-  header: {
-    marginBottom: 40,
-    marginTop: 20,
-  },
-  title: {
-    fontSize: 42,
-    fontWeight: "900",
-    color: COLORS.primary,
-    letterSpacing: -2,
-  },
-  subtitle: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: COLORS.textVariant,
-    letterSpacing: 2,
-    marginTop: 4,
-  },
-  categorySelector: {
-    marginBottom: 32,
-  },
-  scrollContent: {
-    paddingRight: 24,
-  },
-  categoryChip: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    backgroundColor: COLORS.white,
-    borderRadius: 30,
-    marginRight: 12,
-  },
-  categoryChipActive: {
-    backgroundColor: COLORS.primary,
-  },
-  categoryText: {
-    fontSize: 12,
-    fontWeight: "800",
-    color: COLORS.textVariant,
-    letterSpacing: 1,
-  },
-  categoryTextActive: {
-    color: COLORS.white,
-  },
-  hudGrid: {
-    flex: 1,
-    gap: 24,
-    marginBottom: 32,
-  },
-  hudButton: {
-    flex: 1,
-    borderRadius: 32,
-    justifyContent: "center",
-    paddingHorizontal: 40,
-  },
-  buttonMinor: {
-    backgroundColor: COLORS.secondary,
-  },
-  buttonMajor: {
-    backgroundColor: COLORS.major,
-  },
-  hudButtonLabel: {
-    color: COLORS.white,
-    fontSize: 18,
-    fontWeight: "900",
-    letterSpacing: 4,
-    opacity: 0.8,
-  },
-  hudButtonMain: {
-    color: COLORS.white,
-    fontSize: 64,
-    fontWeight: "900",
-    letterSpacing: -4,
-    lineHeight: 64,
-  },
-  footer: {
-    gap: 16,
-  },
-  dashcamButton: {
-    backgroundColor: COLORS.primary,
-    padding: 24,
-    borderRadius: 24,
-    alignItems: "center",
-  },
-  dashcamButtonText: {
-    color: COLORS.white,
-    fontSize: 16,
-    fontWeight: "900",
-    letterSpacing: 2,
-  },
+  safeArea: { flex: 1, backgroundColor: COLORS.surface },
+  container: { flex: 1, padding: 24 },
+  header: { marginBottom: 20, marginTop: 10 },
+  title: { fontSize: 32, fontWeight: "900", color: COLORS.primary, letterSpacing: -1 },
+  subtitle: { fontSize: 12, fontWeight: "700", color: COLORS.textVariant, letterSpacing: 1, marginTop: 2 },
+  categorySelector: { marginBottom: 24 },
+  scrollContent: { paddingRight: 24 },
+  categoryChip: { paddingHorizontal: 16, paddingVertical: 10, backgroundColor: COLORS.white, borderRadius: 20, marginRight: 8, borderWidth: 1, borderColor: "#E2E8F0" },
+  categoryChipActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+  categoryText: { fontSize: 11, fontWeight: "800", color: COLORS.textVariant },
+  categoryTextActive: { color: COLORS.white },
+  hudGrid: { flex: 1, gap: 16, marginBottom: 24 },
+  hudButton: { flex: 1, borderRadius: 20, justifyContent: "center", alignItems: "center" },
+  buttonMinor: { backgroundColor: COLORS.minor },
+  buttonSerious: { backgroundColor: COLORS.serious },
+  buttonDangerous: { backgroundColor: COLORS.dangerous },
+  hudButtonLabel: { color: COLORS.white, fontSize: 24, fontWeight: "900", letterSpacing: 2 },
+  footer: { gap: 16 },
+  startButton: { backgroundColor: COLORS.secondary, padding: 20, borderRadius: 20, alignItems: "center" },
+  endButton: { backgroundColor: COLORS.primary, padding: 20, borderRadius: 20, alignItems: "center" },
+  actionButtonText: { color: COLORS.white, fontSize: 18, fontWeight: "900", letterSpacing: 1 },
 });
