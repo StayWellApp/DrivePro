@@ -1,5 +1,5 @@
-import Shell from "../../Shell";
-import { prisma } from "../../../lib/prisma";
+import Shell from "@/app/[locale]/Shell";
+import { prisma } from "@/lib/prisma";
 
 export default async function GlobalTheoryBank() {
   const questions = await prisma.theoryQuestion.findMany({
@@ -49,7 +49,7 @@ export default async function GlobalTheoryBank() {
                     <td className="px-8 py-6">
                        <p className="font-bold text-slate-900 mb-2 max-w-2xl">{q.question}</p>
                        <div className="flex gap-2">
-                          {JSON.parse(JSON.stringify(q.options)).map((opt: string, i: number) => (
+                          {(q.options as string[]).map((opt: string, i: number) => (
                              <span key={i} className={`text-[10px] px-2 py-1 rounded ${opt === q.answer ? 'bg-teal-500 text-white' : 'bg-slate-100 text-slate-400'}`}>
                                 {opt}
                              </span>

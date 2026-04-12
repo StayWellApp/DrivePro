@@ -1,4 +1,4 @@
-import { auth } from "../../../auth";
+import { auth } from "@/auth";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
@@ -11,9 +11,6 @@ export async function POST(req: Request) {
   const { schoolId, action } = await req.json();
 
   if (action === "enter") {
-    // Here we would ideally update the session.
-    // Since NextAuth v5 session is managed via JWT,
-    // we return a response that the client can use to trigger a session update.
     return NextResponse.json({
       success: true,
       impersonatedSchoolId: schoolId

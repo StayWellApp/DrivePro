@@ -1,5 +1,5 @@
-import Shell from "../../Shell";
-import { prisma } from "../../../lib/prisma";
+import Shell from "@/app/[locale]/Shell";
+import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import ImpersonateButton from "./ImpersonateButton";
 

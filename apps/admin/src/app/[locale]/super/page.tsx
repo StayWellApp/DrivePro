@@ -1,6 +1,6 @@
 "use client";
 
-import Shell from "../Shell";
+import Shell from "@/app/[locale]/Shell";
 import Link from "next/link";
 
 export default function SuperAdminDashboard() {
