@@ -11,17 +11,21 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") || "/";
+  const callbackUrl = searchParams.get("callbackUrl");
   const { data: session, status } = useSession();
 
   useEffect(() => {
     if (status === "authenticated" && session?.user) {
       const role = (session.user as any).role;
+
       if (role === "STUDENT") {
-        router.push(callbackUrl);
+        router.push(callbackUrl || "/");
+      } else if (role === "SUPER_ADMIN") {
+        // Redirect super admins back to their portal if they hit student login
+        window.location.href = "/super";
       } else {
-        // If an admin logs in here, they can still view as student or we redirect them back to admin
-        router.push("/");
+        // School admins hitting student portal
+        window.location.href = "/dashboard";
       }
     }
   }, [session, status, router, callbackUrl]);

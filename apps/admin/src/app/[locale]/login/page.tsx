@@ -11,19 +11,21 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") || "/";
+  const callbackUrl = searchParams.get("callbackUrl");
   const { data: session, status } = useSession();
 
   useEffect(() => {
     if (status === "authenticated" && session?.user) {
       const role = (session.user as any).role;
+
       if (role === "SUPER_ADMIN") {
         router.push("/super");
       } else if (role === "STUDENT") {
-        // Typically students shouldn't be here, but if they are, redirect to student app
-        window.location.href = process.env.NEXT_PUBLIC_STUDENT_APP_URL || "http://localhost:3001";
+        // Redirect students to their own portal root
+        window.location.href = "/";
       } else {
-        router.push(callbackUrl);
+        // Default to dashboard for SCHOOL_ADMIN or others
+        router.push(callbackUrl || "/dashboard");
       }
     }
   }, [session, status, router, callbackUrl]);
@@ -42,7 +44,6 @@ export default function LoginPage() {
       if (res?.error) {
         setError("Invalid email or password. Please try again.");
       }
-      // Redirection is handled by the useEffect
     } catch (err) {
       setError("An unexpected error occurred. Please try again later.");
     } finally {

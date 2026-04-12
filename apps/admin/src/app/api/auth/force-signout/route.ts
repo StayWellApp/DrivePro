@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 
-export async function GET() {
-  const response = NextResponse.redirect(new URL("/", "http://localhost:3000"));
+export async function GET(request: Request) {
+  const { origin } = new URL(request.url);
+  const response = NextResponse.redirect(new URL("/", origin));
 
   // Manual cookie clearance to bypass any NextAuth CSRF/Session state loops
   const cookiesToClear = [

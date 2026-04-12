@@ -36,10 +36,10 @@ export const LoginForm: React.FC<LoginFormProps> = ({
     resolver: zodResolver(loginSchema),
   });
 
-  const handleRoleToggle = (role: string, email: string) => {
+  const handleRoleToggle = (role: string, email: string, pass: string) => {
     setSelectedRole(role);
     setValue("email", email);
-    setValue("password", "password123"); // Default test password
+    setValue("password", pass);
   };
 
   return (
@@ -55,21 +55,21 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         <div className="ui:grid ui:grid-cols-3 ui:gap-2">
           <button
             type="button"
-            onClick={() => handleRoleToggle("SUPER_ADMIN", "owner@drivepro.com")}
+            onClick={() => handleRoleToggle("SUPER_ADMIN", "owner@drivepro.com", "owner123")}
             className={`ui:py-2 ui:px-1 ui:rounded-lg ui:text-[10px] ui:font-bold ui:transition-all ${selectedRole === "SUPER_ADMIN" ? "ui:bg-slate-900 ui:text-white" : "ui:bg-white ui:text-slate-600 ui:border ui:border-slate-200 hover:ui:bg-slate-100"}`}
           >
             Super Admin
           </button>
           <button
             type="button"
-            onClick={() => handleRoleToggle("SCHOOL_ADMIN", "owner@autoskola-matrix.cz")}
+            onClick={() => handleRoleToggle("SCHOOL_ADMIN", "admin.cz@drivepro.com", "admin123")}
             className={`ui:py-2 ui:px-1 ui:rounded-lg ui:text-[10px] ui:font-bold ui:transition-all ${selectedRole === "SCHOOL_ADMIN" ? "ui:bg-slate-900 ui:text-white" : "ui:bg-white ui:text-slate-600 ui:border ui:border-slate-200 hover:ui:bg-slate-100"}`}
           >
             School Admin
           </button>
           <button
             type="button"
-            onClick={() => handleRoleToggle("STUDENT", "student@autoskola-matrix.cz")}
+            onClick={() => handleRoleToggle("STUDENT", "student.cz@drivepro.com", "student123")}
             className={`ui:py-2 ui:px-1 ui:rounded-lg ui:text-[10px] ui:font-bold ui:transition-all ${selectedRole === "STUDENT" ? "ui:bg-slate-900 ui:text-white" : "ui:bg-white ui:text-slate-600 ui:border ui:border-slate-200 hover:ui:bg-slate-100"}`}
           >
             Student

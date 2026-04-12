@@ -1,0 +1,111 @@
+npm warn Unknown project config "auto-install-peers". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> with-tailwind@1.0.0 dev
+> turbo run dev
+
+• turbo 2.9.6
+
+   • Packages in scope: @repo/database, @repo/eslint-config, @repo/i18n, @repo/schema, @repo/tailwind-config, @repo/typescript-config, @repo/ui, admin, api, instructor, student
+   • Running dev in 11 packages
+   • Remote caching disabled
+
+api:dev: cache bypass, force executing aba6d448637b8d6f
+admin:dev: cache bypass, force executing 2e384804e59b28f0
+@repo/ui:dev:styles: cache bypass, force executing 0a47490c3d0a8bd9
+@repo/ui:dev:components: cache bypass, force executing 29c05b9ed1c38c79
+student:dev: cache bypass, force executing c84072d81f48c8ec
+@repo/ui:dev:styles: npm warn Unknown project config "auto-install-peers". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+@repo/ui:dev:styles:
+@repo/ui:dev:styles: > @repo/ui@0.0.0 dev:styles
+@repo/ui:dev:styles: > tailwindcss -i ./src/styles.css -o ./dist/index.css --watch
+@repo/ui:dev:styles:
+admin:dev: npm warn Unknown project config "auto-install-peers". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+api:dev: npm warn Unknown project config "auto-install-peers". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+student:dev: npm warn Unknown project config "auto-install-peers". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+admin:dev:
+admin:dev: > admin@0.1.0 dev
+admin:dev: > next dev
+admin:dev:
+student:dev:
+student:dev: > student@0.1.0 dev
+student:dev: > next dev
+student:dev:
+api:dev:
+api:dev: > api@1.0.0 dev
+api:dev: > nodemon src/index.ts
+api:dev:
+@repo/ui:dev:components: npm warn Unknown project config "auto-install-peers". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+@repo/ui:dev:components:
+@repo/ui:dev:components: > @repo/ui@0.0.0 dev:components
+@repo/ui:dev:components: > tsc --watch
+@repo/ui:dev:components:
+api:dev: [33m[nodemon] 3.1.14[39m
+api:dev: [33m[nodemon] to restart at any time, enter `rs`[39m
+api:dev: [33m[nodemon] watching path(s): src/**/*[39m
+api:dev: [33m[nodemon] watching extensions: ts,json[39m
+api:dev: [32m[nodemon] starting `npx tsx src/index.ts src/index.ts`[39m
+@repo/ui:dev:components: [2J[3J[H10:13:32 PM - Starting compilation in watch mode...
+@repo/ui:dev:components:
+@repo/ui:dev:styles: ≈ tailwindcss v4.2.2
+@repo/ui:dev:styles:
+admin:dev: ⚠ Port 3000 is in use by an unknown process, using available port 3003 instead.
+admin:dev: ▲ Next.js 16.2.1 (Turbopack)
+admin:dev: - Local:         http://localhost:3003
+admin:dev: - Network:       http://192.168.0.2:3003
+admin:dev: ✓ Ready in 1484ms
+student:dev: ⚠ Port 3000 is in use by an unknown process, using available port 3004 instead.
+student:dev: ▲ Next.js 16.2.1 (Turbopack)
+student:dev: - Local:         http://localhost:3004
+student:dev: - Network:       http://192.168.0.2:3004
+student:dev: ✓ Ready in 1503ms
+api:dev: npm warn Unknown env config "auto-install-peers". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+api:dev: npm warn Unknown project config "auto-install-peers". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+api:dev: node:events:497
+api:dev:       throw er; // Unhandled 'error' event
+api:dev:       ^
+api:dev:
+api:dev: Error: listen EADDRINUSE: address already in use :::3000
+api:dev:     at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+api:dev:     at listenInCluster (node:net:1997:12)
+api:dev:     at Server.listen (node:net:2102:7)
+api:dev:     at <anonymous> (/app/apps/api/src/index.ts:207:8)
+api:dev:     at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+api:dev:     at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:665:26)
+api:dev:     at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+api:dev: Emitted 'error' event on Server instance at:
+api:dev:     at emitErrorNT (node:net:1976:8)
+api:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:89:21) {
+api:dev:   code: 'EADDRINUSE',
+api:dev:   errno: -98,
+api:dev:   syscall: 'listen',
+api:dev:   address: '::',
+api:dev:   port: 3000
+api:dev: }
+api:dev:
+api:dev: Node.js v22.22.1
+api:dev: [31m[nodemon] app crashed - waiting for file changes before starting...[39m
+admin:dev: ⨯ Another next dev server is already running.
+admin:dev:
+admin:dev: - Local:        http://localhost:3000
+admin:dev: - PID:          1532514
+admin:dev: - Dir:          /app/apps/admin
+admin:dev: - Log:          .next/dev/logs/next-development.log
+admin:dev:
+admin:dev: Run kill 1532514 to stop it.
+admin:dev: [?25h
+admin:dev: npm error Lifecycle script `dev` failed with error:
+admin:dev: npm error code 1
+admin:dev: npm error path /app/apps/admin
+admin:dev: npm error workspace admin@0.1.0
+admin:dev: npm error location /app/apps/admin
+admin:dev: npm error command failed
+admin:dev: npm error command sh -c next dev
+student:dev: [?25h
+ ERROR  admin#dev: command (/app/apps/admin) /home/jules/.nvm/versions/node/v22.22.1/bin/npm run dev exited (1)
+
+ Tasks:    1 successful, 5 total
+Cached:    0 cached, 5 total
+  Time:    3.756s
+Failed:    admin#dev
+
+ ERROR  run failed: command  exited (1)
