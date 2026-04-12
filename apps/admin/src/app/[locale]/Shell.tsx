@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import StopImpersonatingButton from "./StopImpersonatingButton";
 import ProfileSwitcher from "./ProfileSwitcher";
+import { UserAccountNav } from "@repo/ui";
 
 export default async function Shell({
   children,
@@ -28,7 +29,7 @@ export default async function Shell({
   }
 
   const navItems = [
-    { label: "Dashboard", href: "/", icon: "layout-grid" },
+    { label: "Dashboard", href: "/dashboard", icon: "layout-grid" },
     { label: "Fleet", href: "/fleet", icon: "car" },
     { label: "Instructors", href: "/instructors", icon: "user-check" },
     { label: "Students", href: "/students", icon: "users" },
@@ -38,8 +39,6 @@ export default async function Shell({
   if (user?.role === "SUPER_ADMIN") {
     navItems.push({ label: "Control Tower", href: "/super", icon: "shield" });
   }
-
-  const initials = user?.email?.substring(0, 2).toUpperCase() || "AD";
 
   return (
     <div className="flex min-h-screen bg-slate-50">
@@ -83,16 +82,8 @@ export default async function Shell({
             </div>
           )}
 
-          <div className="flex items-center gap-3 pt-2">
-            <div className="w-10 h-10 rounded-full bg-teal-500/30 flex items-center justify-center text-teal-400 font-bold">
-              {initials}
-            </div>
-            <div className="overflow-hidden">
-              <p className="text-sm font-bold truncate">
-                {user?.email || "Admin"}
-              </p>
-              <p className="text-xs text-white/50">{user?.role === 'SUPER_ADMIN' ? 'Super Admin' : 'School Admin'}</p>
-            </div>
+          <div className="pt-2 border-t border-white/5">
+             <UserAccountNav user={user} />
           </div>
         </div>
       </aside>
@@ -100,7 +91,7 @@ export default async function Shell({
       <main className="flex-1 ml-72 p-12 lg:p-16 max-w-7xl">
         <header className="mb-16">
           <nav className="flex items-center gap-2 text-xs font-bold tracking-widest text-slate-400 uppercase mb-4">
-            <Link href="/" className="hover:text-slate-900 transition-colors">
+            <Link href="/dashboard" className="hover:text-slate-900 transition-colors">
               Home
             </Link>
             <span className="text-slate-300">/</span>
