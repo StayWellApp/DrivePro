@@ -26,6 +26,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
+    "@radix-ui/react-dropdown-menu": "^2.1.16",
     "@types/video.js": "^7.3.58",
     "leaflet": "^1.9.4",
     "leaflet.heat": "^0.2.0",

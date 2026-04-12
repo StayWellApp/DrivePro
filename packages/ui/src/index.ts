@@ -7,3 +7,4 @@ export * from "./Gauge.js";
 export * from "./VideoPlayer.js";
 export * from "./WatchClipModal.js";
 export * from "./LoginForm.js";
+export * from "./UserAccountNav.js";
