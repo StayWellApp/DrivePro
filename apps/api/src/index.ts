@@ -1,3 +1,5 @@
+import { getHotspots, getReadinessScore } from "./services/aiAnalyzer.js";
+import { generateSignedToken, verifySignedToken } from "./utils/crypto.js";
 import express, { Request, Response } from "express";
 import { createServer } from "http";
 import { Server } from "socket.io";
@@ -5,7 +7,6 @@ import cors from "cors";
 import { prisma } from "@repo/database";
 import { generatePdf, ReportData, generateMonthlySchoolReport, MonthlyReportData } from "./services/pdfGenerator.js";
 import { TelemetrySyncSchema } from "@repo/schema";
-import { handleStripeWebhook, createCheckoutSession } from "./services/stripe.js";
 import cron from "node-cron";
 import { sendLessonReminder } from "./services/notifications.js";
 import multer from "multer";
@@ -21,355 +22,135 @@ const io = new Server(server, {
 });
 
 app.use(cors());
-
-app.post(
-  "/webhooks/stripe",
-  express.raw({ type: "application/json" }),
-  async (req: Request, res: Response): Promise<any> => {
-    const sig = req.headers["stripe-signature"] as string;
-    try {
-      const result = await handleStripeWebhook(sig, req.body);
-      return res.status(200).json(result);
-    } catch (err: any) {
-      return res.status(400).send(`Webhook Error: ${err.message}`);
-    }
-  },
-);
-
 app.use(express.json());
 
-// Multi-tenant file storage config
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "uploads/");
-  },
-  filename: (req, file, cb) => {
-    cb(null, `${Date.now()}-${file.originalname}`);
-  },
-});
-const upload = multer({ storage });
-
-// Create Checkout Session
-app.post(
-  "/payments/create-checkout",
-  async (req: Request, res: Response): Promise<any> => {
-    const { studentId, amount } = req.body;
-    try {
-      const session = await createCheckoutSession(studentId, amount);
-      return res.status(200).json({ url: session.url });
-    } catch (error: any) {
-      return res.status(500).json({ error: error.message });
-    }
-  },
-);
-
-// Telemetry Sync Endpoint
-app.post(
-  "/lessons/:id/sync",
-  async (req: Request, res: Response): Promise<any> => {
-    const lessonId = req.params.id;
-    const validation = TelemetrySyncSchema.safeParse(req.body);
-
-    if (!validation.success) {
-      return res.status(400).json({
-        error: "Invalid telemetry data",
-        details: validation.error.format()
-      });
-    }
-
-    const { coordinates, faults } = validation.data;
-
-    try {
-      const lesson = await prisma.lesson.findUnique({
-        where: { id: lessonId as string },
-      });
-
-      if (!lesson) {
-        return res.status(404).json({ error: "Lesson not found" });
-      }
-
-      const telemetryChunk = await prisma.telemetryChunk.create({
-        data: {
-          lesson_id: lessonId as string,
-          coordinates,
-          faults,
-        },
-      });
-
-      if (!lesson.endTime) {
-        await prisma.lesson.update({
-          where: { id: lessonId as string },
-          data: { endTime: new Date() },
-        });
-      }
-
-      return res.status(200).json({
-        success: true,
-        telemetryId: telemetryChunk.id
-      });
-    } catch (error) {
-      console.error("Error syncing telemetry:", error);
-      return res.status(500).json({ error: "Failed to sync telemetry" });
-    }
+app.get("/students/:id/intelligence", async (req: Request, res: Response): Promise<any> => {
+  const studentId = req.params.id;
+  try {
+    const hotspots = await getHotspots(studentId);
+    const readiness = await getReadinessScore(studentId);
+    return res.status(200).json({ hotspots, readiness });
+  } catch (error) {
+    console.error("Error generating intelligence report:", error);
+    return res.status(500).json({ error: "Failed to generate intelligence report" });
   }
-);
+});
 
-// Sync Dashcam Point
-app.post(
-  "/lessons/:id/sync-dashcam",
-  async (req: Request, res: Response): Promise<any> => {
-    const lessonId = req.params.id as string;
-    const { dashcam_start_time, school_id } = req.body;
-
-    try {
-      const activeSession = await prisma.lessonSession.findFirst({
-        where: {
-          lesson_id: lessonId,
-          school_id: school_id as string,
-        },
-        orderBy: {
-          createdAt: "desc",
-        },
-      });
-
-      if (activeSession) {
-        await prisma.lessonSession.update({
-          where: { id: activeSession.id },
-          data: { dashcam_start_time: new Date(dashcam_start_time) },
-        });
-        return res.status(200).json({ success: true });
+app.post("/students/:id/sponsor-link", async (req: Request, res: Response): Promise<any> => {
+  const { id } = req.params;
+  const { passcode } = req.body;
+  try {
+    const token = generateSignedToken(id);
+    const sponsorLink = await (prisma as any).sponsorLink.create({
+      data: {
+        token,
+        student_id: id,
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        passcode
       }
-      return res.status(404).json({ error: "No active session found" });
-    } catch (error) {
-      console.error("Error syncing dashcam:", error);
-      return res.status(500).json({ error: "Failed to sync dashcam" });
-    }
-  },
-);
+    });
+    return res.status(200).json(sponsorLink);
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to create sponsor link" });
+  }
+});
 
-// Heartbeat Endpoint
-app.post(
-  "/lessons/:id/heartbeat",
-  async (req: Request, res: Response): Promise<any> => {
-    const lessonId = req.params.id as string;
-    const { coordinates, faultPins, school_id } = req.body;
+app.get("/shared/:token/verify", async (req: Request, res: Response): Promise<any> => {
+  const { token } = req.params;
+  const { passcode } = req.query;
+  try {
+    const studentId = verifySignedToken(token);
+    if (!studentId) return res.status(401).json({ error: "Invalid or expired token" });
 
-    if (!school_id) {
-      return res.status(400).json({ error: "school_id is required" });
-    }
-
-    try {
-      const activeSession = await prisma.lessonSession.findFirst({
-        where: {
-          lesson_id: lessonId,
-          school_id: school_id as string,
-        },
-        orderBy: {
-          createdAt: "desc",
-        },
-      });
-
-      if (activeSession) {
-        await prisma.$executeRaw`
-        UPDATE "LessonSession"
-        SET gps_route = CASE
-          WHEN gps_route IS NULL THEN ST_GeomFromText(${`LINESTRING(${coordinates.longitude} ${coordinates.latitude}, ${coordinates.longitude} ${coordinates.latitude})`}, 4326)
-          ELSE ST_AddPoint(gps_route::geometry, ST_MakePoint(${coordinates.longitude}, ${coordinates.latitude})::geometry)
-        END
-        WHERE id = ${activeSession.id}
-      `;
-      }
-    } catch (error) {
-      console.error("Error saving GPS route:", error);
-    }
-
-    if (faultPins && Array.isArray(faultPins) && faultPins.length > 0) {
-      try {
-        const activeSession = await prisma.lessonSession.findFirst({
-          where: {
-            lesson_id: lessonId as string,
-            school_id: school_id as string,
-          },
-          orderBy: {
-            createdAt: "desc",
-          },
-        });
-
-        if (activeSession) {
-          await prisma.faultPin.createMany({
-            data: faultPins.map((pin: any) => {
-              let video_offset_seconds = null;
-              if (activeSession.dashcam_start_time) {
-                video_offset_seconds = Math.floor(
-                  (new Date(pin.timestamp).getTime() -
-                    activeSession.dashcam_start_time.getTime()) /
-                    1000,
-                );
-              }
-              return {
-                school_id: school_id as string,
-                lesson_session_id: activeSession.id,
-                category: pin.category,
-                timestamp: new Date(pin.timestamp),
-                latitude: pin.location.latitude,
-                longitude: pin.location.longitude,
-                video_offset_seconds,
-              };
-            }),
-          });
-        }
-      } catch (error) {
-        console.error("Error saving fault pins:", error);
-      }
-    }
-
-    io.to(`school_${school_id}`).emit("lesson_update", {
-      lessonId,
-      coordinates,
-      faultPins: faultPins || [],
-      timestamp: new Date().toISOString(),
+    const link = await (prisma as any).sponsorLink.findUnique({
+      where: { token }
     });
 
-    return res.status(200).json({ success: true });
-  },
-);
-
-// Get Replay Data
-app.get(
-  "/lessons/:id/replay-data",
-  async (req: Request, res: Response): Promise<any> => {
-    const lessonId = req.params.id;
-    const school_id = req.query.school_id as string;
-
-    if (!school_id) {
-      return res
-        .status(400)
-        .json({ error: "school_id is required as a query parameter" });
+    if (link?.passcode && link.passcode !== passcode) {
+      return res.status(403).json({ error: "Invalid passcode" });
     }
 
-    try {
-      const session = await prisma.lessonSession.findFirst({
-        where: {
-          lesson_id: String(lessonId),
-          school_id: school_id as string,
-        },
-        orderBy: {
-          createdAt: "desc",
-        },
-      });
+    return res.status(200).json({ studentId });
+  } catch (error) {
+    return res.status(500).json({ error: "Verification failed" });
+  }
+});
 
-      if (!session) {
-        return res
-          .status(404)
-          .json({ error: "No active LessonSession found for this lesson" });
+app.patch("/lessons/:id/cancel", async (req: Request, res: Response): Promise<any> => {
+  const { id } = req.params;
+  const { mode } = req.body;
+
+  try {
+    const lesson = await (prisma as any).lesson.findUnique({
+      where: { id },
+      include: { student: true }
+    });
+
+    if (!lesson) return res.status(404).json({ error: "Lesson not found" });
+
+    await (prisma as any).lesson.update({
+      where: { id },
+      data: { status: 'CANCELLED' }
+    });
+
+    if (mode === 'REFUND') {
+      await (prisma as any).student.update({
+        where: { id: lesson.student_id },
+        data: { lessonCredits: { increment: 1 } }
+      });
+    }
+
+    return res.status(200).json({ success: true, mode });
+  } catch (error) {
+    console.error("Cancellation error:", error);
+    return res.status(500).json({ error: "Failed to cancel lesson" });
+  }
+});
+
+app.post("/students/:id/manual-credit", async (req: Request, res: Response): Promise<any> => {
+  const { id } = req.params;
+  const { amount, credits } = req.body;
+
+  try {
+    const student = await (prisma as any).student.update({
+      where: { id },
+      data: {
+        lessonCredits: { increment: credits || 0 },
+        balance: { increment: amount || 0 }
       }
+    });
 
-      const faultPins = await prisma.faultPin.findMany({
-        where: {
-          lesson_session_id: session.id,
-          school_id: school_id as string,
-        },
-        orderBy: {
-          timestamp: "asc",
-        },
-      });
+    await (prisma as any).payment.create({
+      data: {
+        school_id: student.school_id,
+        student_id: id,
+        amount: amount || 0,
+        status: "CASH_PAYMENT"
+      }
+    });
 
-      const formattedFaultPins = faultPins.map((pin) => ({
-        ...pin,
-        video_timestamp: pin.video_offset_seconds,
-      }));
-
-      return res.status(200).json({
-        gpsPoints: [],
-        faultPins: formattedFaultPins,
-      });
-    } catch (error) {
-      console.error("Error getting replay data:", error);
-      return res.status(500).json({ error: "Internal server error" });
-    }
-  },
-);
-
-// Admin Monthly Report Endpoint
-app.get(
-  "/admin/reports/monthly",
-  async (req: Request, res: Response): Promise<any> => {
-    try {
-      const now = new Date();
-      const monthName = now.toLocaleString("default", { month: "long" });
-
-      const totalLessons = await prisma.lesson.count();
-      const totalPayments = await prisma.payment.aggregate({
-        _sum: { amount: true },
-      });
-
-      const vehicles = await prisma.vehicle.findMany();
-      const fleetStatus = {
-        total: vehicles.length || 1,
-        operational: vehicles.length > 2 ? vehicles.length - 2 : vehicles.length || 1,
-        warning: vehicles.length > 2 ? 1 : 0,
-        overdue: vehicles.length > 2 ? 1 : 0,
-      };
-
-      const reportData: MonthlyReportData = {
-        schoolName: "Elite Driving Academy",
-        month: monthName,
-        totalLessons,
-        totalRevenue: totalPayments._sum.amount || 0,
-        fleetStatus,
-        studentStats: {
-          totalActive: await prisma.student.count(),
-          estimatedPassRate: 84,
-        },
-      };
-
-      const pdfBuffer = await generateMonthlySchoolReport(reportData);
-
-      res.setHeader("Content-Type", "application/pdf");
-      res.setHeader(
-        "Content-Disposition",
-        `attachment; filename=monthly-report-${monthName.toLowerCase()}.pdf`,
-      );
-      return res.status(200).send(pdfBuffer);
-    } catch (error) {
-      console.error("Error generating monthly report:", error);
-      return res.status(500).json({ error: "Failed to generate monthly report" });
-    }
+    return res.status(200).json(student);
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to add manual credit" });
   }
-);
+});
 
-// Lesson Stats Endpoint
-app.get(
-  "/lessons/:id/stats",
-  async (req: Request, res: Response): Promise<any> => {
-    const lessonId = req.params.id;
-    try {
-      const chunks = await prisma.telemetryChunk.findMany({
-        where: { lesson_id: lessonId as string },
-      });
-
-      let allCoordinates: any[] = [];
-      chunks.forEach(chunk => {
-        if (Array.isArray(chunk.coordinates)) {
-          allCoordinates = [...allCoordinates, ...chunk.coordinates];
-        }
-      });
-
-      const { calculateTelemetryStats } = await import("./utils/telemetry.js");
-      const stats = calculateTelemetryStats(allCoordinates);
-
-      return res.status(200).json(stats);
-    } catch (error) {
-      console.error("Error calculating lesson stats:", error);
-      return res.status(500).json({ error: "Failed to calculate stats" });
-    }
+app.post("/theory/attempts", async (req: Request, res: Response): Promise<any> => {
+  const { studentId, score, total, passed, answers } = req.body;
+  try {
+    const attempt = await (prisma as any).studentExamAttempt.create({
+      data: {
+        student_id: studentId,
+        score,
+        total,
+        passed,
+        answers,
+      },
+    });
+    return res.status(200).json(attempt);
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to save theory attempt" });
   }
-);
-
-io.on("connection", (socket) => {
-  socket.on("join_school", (school_id: string) => {
-    socket.join(`school_${school_id}`);
-  });
 });
 
 const PORT = process.env.PORT || 8080;
@@ -382,15 +163,10 @@ cron.schedule("0 8 * * *", async () => {
   tomorrow.setDate(tomorrow.getDate() + 1);
   tomorrow.setHours(0, 0, 0, 0);
 
-  const dayAfterTomorrow = new Date(tomorrow);
-  dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 1);
-
-  const lessons = await prisma.lesson.findMany({
+  const lessons = await (prisma as any).lesson.findMany({
     where: {
-      startTime: {
-        gte: tomorrow,
-        lt: dayAfterTomorrow,
-      },
+      startTime: { gte: tomorrow, lt: new Date(tomorrow.getTime() + 86400000) },
+      status: 'SCHEDULED'
     },
   });
 

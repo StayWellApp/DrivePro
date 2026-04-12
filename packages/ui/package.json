@@ -26,6 +26,7 @@
   },
   "dependencies": {
     "leaflet": "^1.9.4",
+    "leaflet.heat": "^0.2.0",
     "react-leaflet": "^5.0.0"
   },
   "devDependencies": {
@@ -34,6 +35,7 @@
     "@repo/typescript-config": "*",
     "@tailwindcss/cli": "^4.1.5",
     "@types/leaflet": "^1.9.12",
+    "@types/leaflet.heat": "^0.2.5",
     "@types/react": "^19.1.0",
     "eslint": "^9.39.1",
     "tailwindcss": "^4.1.5",

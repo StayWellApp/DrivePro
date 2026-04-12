@@ -1,6 +1,4 @@
-"use client";
-
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   MapContainer,
   TileLayer,
@@ -12,6 +10,7 @@ import {
 } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import "leaflet.heat";
 import { TelemetryScrubber } from "./TelemetryScrubber.js";
 import { IntelligencePane } from "./IntelligencePane.js";
 
@@ -27,6 +26,24 @@ function MapBounds({ route }: { route: [number, number][] }) {
       }
     }
   }, [map, route]);
+  return null;
+}
+
+function HeatmapLayer({ points }: { points: [number, number, number][] }) {
+  const map = useMap();
+  useEffect(() => {
+    if (!points || points.length === 0) return;
+    // @ts-ignore
+    const heat = L.heatLayer(points, {
+      radius: 30,
+      blur: 20,
+      maxZoom: 17,
+      gradient: { 0.4: 'blue', 0.65: 'lime', 1: 'red' }
+    }).addTo(map);
+    return () => {
+      map.removeLayer(heat);
+    };
+  }, [map, points]);
   return null;
 }
 
@@ -67,6 +84,7 @@ export function LessonReplay({ route, faults, labels = {
   const [mounted, setMounted] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [activeFault, setActiveFault] = useState<FaultPin | null>(null);
+  const [showHeatmap, setShowHeatmap] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -79,6 +97,10 @@ export function LessonReplay({ route, faults, labels = {
   }, []);
 
   const routePositions = useMemo(() => route.map(p => [p.lat, p.lng] as [number, number]), [route]);
+
+  const heatmapPoints = useMemo(() =>
+    faults.map(f => [f.lat, f.lng, f.severity === 'dangerous' ? 1.0 : f.severity === 'serious' ? 0.6 : 0.3] as [number, number, number]),
+  [faults]);
 
   const duration = useMemo(() => {
     if (route.length < 2) return 0;
@@ -121,7 +143,7 @@ export function LessonReplay({ route, faults, labels = {
     return time > 0 ? Math.round(dist / time) : 0;
   }, [route, currentTime, duration]);
 
-  if (!mounted) return <div className="h-[600px] w-full bg-zinc-950 animate-pulse rounded-3xl" />;
+  if (!mounted) return <div className="ui:h-[600px] ui:w-full ui:bg-zinc-950 ui:animate-pulse ui:rounded-3xl" />;
 
   const center = routePositions.length > 0 && routePositions[0] ? routePositions[0] : [49.8175, 15.473] as [number, number];
 
@@ -135,14 +157,24 @@ export function LessonReplay({ route, faults, labels = {
 
   return (
     <div className="ui:relative ui:space-y-6 ui:group">
-      <div className="ui:absolute ui:top-6 ui:left-6 ui:z-[500] ui:bg-zinc-950/80 ui:backdrop-blur-xl ui:border ui:border-white/10 ui:p-4 ui:rounded-2xl ui:flex ui:items-center ui:gap-4">
-         <div className="ui:w-12 ui:h-12 ui:rounded-full ui:bg-teal-500/20 ui:flex ui:items-center ui:justify-center ui:text-teal-400">
-            <span className="material-symbols-outlined">speed</span>
-         </div>
-         <div>
-            <p className="ui:text-[10px] ui:font-black ui:text-zinc-500 ui:uppercase ui:tracking-widest">Current Speed</p>
-            <p className="ui:text-2xl ui:font-black ui:text-white">{currentSpeed} <span className="ui:text-sm ui:font-medium ui:text-zinc-500">km/h</span></p>
-         </div>
+      <div className="ui:absolute ui:top-6 ui:left-6 ui:z-[500] ui:flex ui:flex-col ui:gap-3">
+        <div className="ui:bg-zinc-950/80 ui:backdrop-blur-xl ui:border ui:border-white/10 ui:p-4 ui:rounded-2xl ui:flex ui:items-center ui:gap-4">
+           <div className="ui:w-12 ui:h-12 ui:rounded-full ui:bg-teal-500/20 ui:flex ui:items-center ui:justify-center ui:text-teal-400">
+              <span className="material-symbols-outlined">speed</span>
+           </div>
+           <div>
+              <p className="ui:text-[10px] ui:font-black ui:text-zinc-500 ui:uppercase ui:tracking-widest">Current Speed</p>
+              <p className="ui:text-2xl ui:font-black ui:text-white">{currentSpeed} <span className="ui:text-sm ui:font-medium ui:text-zinc-500">km/h</span></p>
+           </div>
+        </div>
+
+        <button
+          onClick={() => setShowHeatmap(!showHeatmap)}
+          className={`ui:px-4 ui:py-3 ui:rounded-xl ui:font-black ui:text-[10px] ui:uppercase ui:tracking-widest ui:transition-all ui:flex ui:items-center ui:gap-2 ui:border ${showHeatmap ? 'ui:bg-teal-500 ui:text-slate-900 ui:border-teal-400' : 'ui:bg-zinc-950/80 ui:text-white ui:border-white/10 ui:backdrop-blur-xl'}`}
+        >
+          <span className="material-symbols-outlined ui:text-lg">local_fire_department</span>
+          {showHeatmap ? 'Disable Heatmap' : 'Enable Heatmap'}
+        </button>
       </div>
 
       <div className="ui:h-[600px] ui:w-full ui:rounded-3xl ui:overflow-hidden ui:border ui:border-white/10 ui:shadow-2xl ui:relative ui:z-0">
@@ -156,34 +188,12 @@ export function LessonReplay({ route, faults, labels = {
             <>
               <Polyline positions={routePositions as any} color="#2DD4BF" weight={6} opacity={0.6} />
               <MapBounds route={routePositions as any} />
-              {routePositions[0] && (
-                <CircleMarker center={routePositions[0] as any} radius={8} pathOptions={{ color: "#FFFFFF", fillColor: "#2DD4BF", fillOpacity: 1 }}>
-                  <Popup>{labels.start}</Popup>
-                </CircleMarker>
-              )}
-              {routePositions.length > 1 && routePositions[routePositions.length - 1] && (
-                <CircleMarker center={routePositions[routePositions.length - 1] as any} radius={8} pathOptions={{ color: "#FFFFFF", fillColor: "#EF4444", fillOpacity: 1 }}>
-                  <Popup>{labels.end}</Popup>
-                </CircleMarker>
-              )}
             </>
           )}
 
-          {carPosition && (
-            <Marker
-              position={carPosition as any}
-              icon={L.divIcon({
-                className: "custom-car-icon",
-                html: `<div class="ui:w-8 ui:h-8 ui:bg-white ui:rounded-full ui:flex ui:items-center ui:justify-center ui:shadow-2xl ui:ring-4 ui:ring-teal-500/30">
-                        <div class="ui:w-3 ui:h-3 ui:bg-zinc-950 ui:rounded-full ui:animate-ping"></div>
-                      </div>`,
-                iconSize: [32, 32],
-                iconAnchor: [16, 16],
-              })}
-            />
-          )}
+          {showHeatmap && <HeatmapLayer points={heatmapPoints} />}
 
-          {faults.map((fault) => (
+          {!showHeatmap && faults.map((fault) => (
             <Marker
               key={fault.id}
               position={[fault.lat, fault.lng]}
@@ -211,6 +221,20 @@ export function LessonReplay({ route, faults, labels = {
               </Popup>
             </Marker>
           ))}
+
+          {carPosition && (
+            <Marker
+              position={carPosition as any}
+              icon={L.divIcon({
+                className: "custom-car-icon",
+                html: `<div class="ui:w-8 ui:h-8 ui:bg-white ui:rounded-full ui:flex ui:items-center ui:justify-center ui:shadow-2xl ui:ring-4 ui:ring-teal-500/30">
+                        <div class="ui:w-3 ui:h-3 ui:bg-zinc-950 ui:rounded-full ui:animate-ping"></div>
+                      </div>`,
+                iconSize: [32, 32],
+                iconAnchor: [16, 16],
+              })}
+            />
+          )}
         </MapContainer>
       </div>
 

@@ -89,6 +89,58 @@ async function main() {
   });
 
   console.log("Created student user and record:", studentUser.email);
+
+  // 5. Theory Questions (Czech & English)
+  const theoryQuestions = [
+    {
+      id: "q1",
+      question: "Jaká je maximální povolená rychlost v obci, není-li dopravní značkou stanoveno jinak?",
+      language: "cs",
+      options: ["30 km/h", "50 km/h", "70 km/h", "90 km/h"],
+      answer: "50 km/h"
+    },
+    {
+      id: "q1-en",
+      question: "What is the maximum speed limit in a built-up area unless otherwise indicated by a traffic sign?",
+      language: "en",
+      options: ["30 km/h", "50 km/h", "70 km/h", "90 km/h"],
+      answer: "50 km/h"
+    },
+    {
+      id: "q2",
+      question: "Kdy musí řidič dát znamení o změně směru jízdy?",
+      language: "cs",
+      options: ["Pouze v noci", "Před zahájením jízdního úkonu", "Až během odbočování", "Není to nutné"],
+      answer: "Před zahájením jízdního úkonu"
+    },
+    {
+      id: "q2-en",
+      question: "When must a driver give a signal of a change in direction of travel?",
+      language: "en",
+      options: ["Only at night", "Before starting the driving maneuver", "Only during turning", "It is not necessary"],
+      answer: "Before starting the driving maneuver"
+    }
+  ];
+
+  for (const q of theoryQuestions) {
+    await prisma.theoryQuestion.upsert({
+      where: { id: q.id },
+      update: {
+        question: q.question,
+        language: q.language,
+        options: q.options,
+        answer: q.answer
+      },
+      create: {
+        id: q.id,
+        question: q.question,
+        language: q.language,
+        options: q.options,
+        answer: q.answer
+      }
+    });
+  }
+  console.log("Seeded theory questions");
 }
 
 main()
@@ -97,5 +149,5 @@ main()
     process.exit(1);
   })
   .finally(async () => {
-    await prisma.$disconnect();
+    await prisma.();
   });

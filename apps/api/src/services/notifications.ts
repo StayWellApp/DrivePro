@@ -1,12 +1,21 @@
 import { prisma } from '@repo/database';
 
-// Mock service for Twilio/SendGrid
+/**
+ * Placeholder for Twilio (SMS)
+ */
 const sendSms = async (to: string, body: string) => {
-  console.log(`Sending SMS to ${to}: ${body}`);
+  // In production: const client = new twilio(process.env.TWILIO_SID, process.env.TWILIO_AUTH_TOKEN);
+  // await client.messages.create({ body, to, from: process.env.TWILIO_NUMBER });
+  console.log(`[TWILIO SMS] To: ${to} | Message: ${body}`);
 };
 
+/**
+ * Placeholder for Resend/SendGrid (Email)
+ */
 const sendEmail = async (to: string, subject: string, body: string) => {
-  console.log(`Sending Email to ${to}: ${subject} - ${body}`);
+  // In production: const resend = new Resend(process.env.RESEND_API_KEY);
+  // await resend.emails.send({ from: 'DrivePro <alerts@drivepro.com>', to, subject, html: body });
+  console.log(`[RESEND EMAIL] To: ${to} | Subject: ${subject} | Message: ${body}`);
 };
 
 export const sendLessonReminder = async (lessonId: string) => {
@@ -18,12 +27,21 @@ export const sendLessonReminder = async (lessonId: string) => {
     },
   });
 
-  if (lesson) {
+  if (lesson && lesson.student.user) {
+    const studentName = lesson.student.user.firstName || 'Student';
     const instructorName = `${lesson.instructor.user.firstName} ${lesson.instructor.user.lastName}`;
-    const message = `Reminder: You have a driving lesson tomorrow at ${lesson.startTime.toLocaleTimeString()} with ${instructorName}.`;
-    await sendSms('student-phone', message); // Student phone should be in DB
-    // @ts-ignore
-    await sendEmail(lesson.student.user.email, 'Driving Lesson Reminder', message);
+    const startTime = lesson.startTime.toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' });
+
+    const message = `Ahoj ${studentName}, připomínáme tvou zítřejší lekci autoškoly v ${startTime} s instruktorem ${instructorName}. Těšíme se!`;
+
+    // Send via both for maximum reliability during pilot
+    if (lesson.student.user.phoneNumber) {
+      await sendSms(lesson.student.user.phoneNumber, message);
+    }
+
+    if (lesson.student.user.email) {
+      await sendEmail(lesson.student.user.email, 'Připomínka zítřejší lekce autoškoly', message);
+    }
   }
 };
 
@@ -36,12 +54,16 @@ export const sendCancellationNotification = async (lessonId: string) => {
     },
   });
 
-  if (lesson) {
+  if (lesson && lesson.student.user) {
     const instructorName = `${lesson.instructor.user.firstName} ${lesson.instructor.user.lastName}`;
-    const message = `Important: Your driving lesson on ${lesson.startTime.toLocaleDateString()} with ${instructorName} has been cancelled.`;
-    await sendSms('student-phone', message);
-    // @ts-ignore
-    await sendEmail(lesson.student.user.email, 'Lesson Cancelled', message);
+    const message = `Důležité: Tvoje lekce autoškoly dne ${lesson.startTime.toLocaleDateString('cs-CZ')} s instruktorem ${instructorName} byla zrušena.`;
+
+    if (lesson.student.user.phoneNumber) {
+      await sendSms(lesson.student.user.phoneNumber, message);
+    }
+    if (lesson.student.user.email) {
+      await sendEmail(lesson.student.user.email, 'Lekce zrušena', message);
+    }
   }
 };
 
@@ -51,10 +73,14 @@ export const sendLowBalanceAlert = async (studentId: string) => {
     include: { user: true }
   });
 
-  if (student && student.balance < 500) {
-    const message = `Your credit balance is low (${student.balance} CZK). Please top up to avoid lesson cancellations.`;
-    await sendSms('student-phone', message);
-    // @ts-ignore
-    await sendEmail(student.user.email, 'Low Balance Alert', message);
+  if (student && student.user && student.balance < 500) {
+    const message = `Tvůj kredit je nízký (${student.balance} Kč). Prosím dobij si ho, aby nedošlo k rušení lekcí.`;
+
+    if (student.user.phoneNumber) {
+      await sendSms(student.user.phoneNumber, message);
+    }
+    if (student.user.email) {
+      await sendEmail(student.user.email, 'Nízký zůstatek kreditu', message);
+    }
   }
 };
