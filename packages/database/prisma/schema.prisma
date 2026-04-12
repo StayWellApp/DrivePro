@@ -37,6 +37,9 @@ model School {
   id                String   @id @default(uuid())
   name              String
   stripe_account_id String?
+  customLogoUrl     String?
+  primaryColor      String?
+  secondaryColor    String?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
@@ -133,6 +136,8 @@ model Lesson {
   startTime     DateTime
   endTime       DateTime?
   videoTimestampOffset Float?
+  videoUrl           String?
+  videoStartTime     DateTime?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   status        LessonStatus @default(SCHEDULED)

@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import Link from "next/link";
 import { auth } from "@/auth";
+import { prisma } from "@/lib/prisma";
 
 export default async function Shell({
   children,
@@ -13,6 +14,17 @@ export default async function Shell({
 }) {
   const session = await auth();
   const user = session?.user;
+
+  let schoolBranding = { customLogoUrl: null };
+  if (user) {
+    const fullUser = await prisma.user.findUnique({
+      where: { id: user.id },
+      include: { school: true }
+    });
+    if (fullUser?.school) {
+      schoolBranding.customLogoUrl = fullUser.school.customLogoUrl as any;
+    }
+  }
 
   const navItems = [
     { label: "Dashboard", href: "/", icon: "layout-grid" },
@@ -28,9 +40,13 @@ export default async function Shell({
     <div className="flex min-h-screen bg-slate-50">
       <aside className="w-72 bg-[#0F172A] text-white flex flex-col fixed inset-y-0 shadow-xl">
         <div className="p-8 mb-8">
-          <h1 className="text-2xl font-black tracking-tighter text-teal-400">
-            DRIVEPRO
-          </h1>
+          {schoolBranding.customLogoUrl ? (
+            <img src={schoolBranding.customLogoUrl} alt="School Logo" className="h-10 mb-2 object-contain object-left" />
+          ) : (
+            <h1 className="text-2xl font-black tracking-tighter text-teal-400">
+              DRIVEPRO
+            </h1>
+          )}
         </div>
 
         <nav className="flex-1 px-4 space-y-2">

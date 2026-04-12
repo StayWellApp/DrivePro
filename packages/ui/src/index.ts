@@ -4,3 +4,5 @@ export * from "./IntelligencePane.js";
 export * from "./TelemetryScrubber.js";
 export * from "./LessonReplay.js";
 export * from "./Gauge.js";
+export * from "./VideoPlayer.js";
+export * from "./WatchClipModal.js";

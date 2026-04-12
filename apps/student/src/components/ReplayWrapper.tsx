@@ -11,17 +11,21 @@ const LessonReplay = dynamic<any>(
 interface ReplayWrapperProps {
   route: any[];
   faults: any[];
+  videoUrl?: string | null;
   labels: any;
 }
 
-export default function ReplayWrapper({ route, faults, labels }: ReplayWrapperProps) {
+export default function ReplayWrapper({ route, faults, videoUrl, labels }: ReplayWrapperProps) {
   return (
     <ErrorBoundary>
-      <LessonReplay
-          route={route}
-          faults={faults}
-          labels={labels}
-      />
+      <div className="space-y-6">
+        <LessonReplay
+            route={route}
+            faults={faults}
+            videoUrl={videoUrl}
+            labels={labels}
+        />
+      </div>
     </ErrorBoundary>
   );
 }
