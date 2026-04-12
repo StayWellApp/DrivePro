@@ -52,41 +52,39 @@ export default function TheoryTestPage() {
 
   const fetchQuestions = async () => {
     try {
-      // In a real app, fetch from API based on locale and mode
-      // For now, mock questions with localized content
-      const mockQuestions: Question[] = [
-        {
-          id: "1",
-          question: locale === 'cs' ? "Jaká je maximální povolená rychlost v obci?" : "What is the maximum speed limit in a built-up area?",
-          options: ["30 km/h", "50 km/h", "70 km/h", "90 km/h"],
-          answer: "50 km/h",
-          explanation: locale === 'cs' ? "V obci je standardně povolena rychlost 50 km/h." : "The standard speed limit in built-up areas is 50 km/h.",
-        },
-        {
-          id: "2",
-          question: locale === 'cs' ? "Kdy se používají mlhová světla?" : "When should you use fog lights?",
-          options: ["Snížená viditelnost < 100m", "V noci", "V dešti", "Vždy"],
-          answer: locale === 'cs' ? "Snížená viditelnost < 100m" : "Snížená viditelnost < 100m", // matched to choice for simplicity
-          explanation: "MLhová světla se používají při mlze, sněžení nebo silném dešti.",
-        }
-      ];
-      setQuestions(mockQuestions);
-    } catch (e) {
-      console.error(e);
+      const studentId = localStorage.getItem("student_id") || "demo-student-id";
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/theory/questions?studentId=${studentId}`);
+      const data = await response.json();
+
+      if (data && data.length > 0) {
+        setQuestions(data);
+      } else {
+        // Fallback mock questions if API fails or no questions for country
+        const mockQuestions: Question[] = [
+          {
+            id: "1",
+            question: locale === 'cs' ? "Jaká je maximální povolená rychlost v obci?" : "What is the maximum speed limit in a built-up area?",
+            options: ["30 km/h", "50 km/h", "70 km/h", "90 km/h"],
+            answer: "50 km/h",
+            explanation: locale === 'cs' ? "V obci je standardně povolena rychlost 50 km/h." : "The standard speed limit in built-up areas is 50 km/h.",
+          }
+        ];
+        setQuestions(mockQuestions);
+      }
+    } catch (error) {
+      console.error("Failed to fetch questions", error);
     }
   };
 
   const handleOptionClick = (option: string) => {
-    if (finished) return;
+    if (feedback && studyMode) return;
     setSelectedOption(option);
-
-    const currentQ = questions[currentIndex];
-    setUserAnswers(prev => ({ ...prev, [currentQ.id]: option }));
+    setUserAnswers({ ...userAnswers, [questions[currentIndex].id]: option });
 
     if (studyMode) {
-      if (option === currentQ.answer) {
+      if (option === questions[currentIndex].answer) {
+        setScore(score + 1);
         setFeedback("correct");
-        setScore(prev => prev + 1);
       } else {
         setFeedback("incorrect");
       }
@@ -107,7 +105,6 @@ export default function TheoryTestPage() {
   const finishTest = async () => {
     setFinished(true);
 
-    // Calculate final score for mock mode (in practice mode it updates per question)
     let finalScore = 0;
     if (!studyMode) {
         questions.forEach(q => {
@@ -124,7 +121,7 @@ export default function TheoryTestPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          studentId: "demo-student-id", // Should come from auth
+          studentId: localStorage.getItem("student_id") || "demo-student-id",
           score: finalScore,
           total: questions.length,
           passed,
@@ -210,9 +207,7 @@ export default function TheoryTestPage() {
   return (
     <div className="p-8 max-w-7xl mx-auto w-full">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Left Column: Question Area */}
         <div className="lg:col-span-8 space-y-8">
-          {/* Header */}
           <div className="flex items-center justify-between bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
             <div className="flex items-center gap-4">
               <span className="bg-slate-900 text-white w-10 h-10 rounded-lg flex items-center justify-center font-black">
@@ -235,7 +230,6 @@ export default function TheoryTestPage() {
             )}
           </div>
 
-          {/* Question Card */}
           <div className="bg-white p-10 rounded-3xl shadow-sm border border-slate-100 min-h-[400px] flex flex-col justify-center">
             {currentQuestion && (
               <>
@@ -246,7 +240,7 @@ export default function TheoryTestPage() {
                 </div>
 
                 <div className="grid grid-cols-1 gap-4">
-                  {currentQuestion.options.map((option, idx) => {
+                  {(currentQuestion.options as any).map((option: string, idx: number) => {
                     const isSelected = selectedOption === option;
                     const isCorrect = option === currentQuestion.answer;
                     const letters = ["A", "B", "C", "D"];
@@ -287,7 +281,6 @@ export default function TheoryTestPage() {
             )}
           </div>
 
-          {/* Navigation Footer */}
           <div className="flex justify-between items-center px-4">
             <button
               disabled={currentIndex === 0}
@@ -313,7 +306,6 @@ export default function TheoryTestPage() {
           </div>
         </div>
 
-        {/* Right Column: Navigator */}
         <div className="lg:col-span-4">
            <div className="bg-white rounded-2xl p-6 border border-slate-100 sticky top-24">
               <h4 className="font-bold mb-4">{t("examNavigator")}</h4>

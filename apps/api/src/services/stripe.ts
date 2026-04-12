@@ -9,14 +9,21 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 export const createCheckoutSession = async (
   studentId: string,
   amount: number,
-  currency: string = "czk"
+  currencyOverride?: string
 ) => {
-  const student = await prisma.student.findUnique({
+  const student = await (prisma as any).student.findUnique({
     where: { id: studentId },
-    include: { school: true, user: true },
+    include: {
+      school: {
+        include: { country: true }
+      },
+      user: true
+    },
   });
 
   if (!student) throw new Error("Student not found");
+
+  const currency = currencyOverride || student.school.country?.currency || "czk";
 
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ["card"],
@@ -64,12 +71,12 @@ export const handleStripeWebhook = async (sig: string, body: Buffer) => {
     const amount = session.amount_total ? session.amount_total / 100 : 0;
 
     if (studentId) {
-      await prisma.$transaction([
-        prisma.student.update({
+      await (prisma as any).$transaction([
+        (prisma as any).student.update({
           where: { id: studentId },
           data: { balance: { increment: amount } },
         }),
-        prisma.payment.create({
+        (prisma as any).payment.create({
           data: {
             student_id: studentId,
             school_id: session.metadata?.schoolId!,

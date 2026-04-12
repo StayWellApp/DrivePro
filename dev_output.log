@@ -1,0 +1,38 @@
+npm warn Unknown project config "auto-install-peers". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+• turbo 2.9.6
+ WARNING  No locally installed `turbo` found in your repository. Using globally installed version (2.9.6), which can cause unexpected behavior.
+
+Installing the version in your repository (^2.8.21) before calling `turbo` will result in more predictable behavior across environments.
+
+   • Packages in scope: admin, api
+   • Running dev in 2 packages
+   • Remote caching disabled
+
+admin:dev: cache bypass, force executing e880cd1beb29f212
+api:dev: cache bypass, force executing 5751802d0f5e7c9d
+admin:dev: npm warn Unknown project config "auto-install-peers". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+api:dev: npm warn Unknown project config "auto-install-peers". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+admin:dev:
+admin:dev: > admin@0.1.0 dev
+admin:dev: > next dev
+admin:dev:
+api:dev:
+api:dev: > api@1.0.0 dev
+api:dev: > nodemon src/index.ts
+api:dev:
+admin:dev: sh: 1: next: not found
+admin:dev: npm error Lifecycle script `dev` failed with error:
+admin:dev: npm error code 127
+admin:dev: npm error path /app/apps/admin
+admin:dev: npm error workspace admin@0.1.0
+admin:dev: npm error location /app/apps/admin
+admin:dev: npm error command failed
+admin:dev: npm error command sh -c next dev
+ ERROR  admin#dev: command (/app/apps/admin) /home/jules/.nvm/versions/node/v22.22.1/bin/npm run dev exited (127)
+
+ Tasks:    0 successful, 2 total
+Cached:    0 cached, 2 total
+  Time:    362ms
+Failed:    admin#dev
+
+ ERROR  run failed: command  exited (127)

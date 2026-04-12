@@ -8,9 +8,11 @@ const intlMiddleware = createMiddleware(routing);
 export default auth((req) => {
   const { nextUrl } = req;
   const isLoggedIn = !!req.auth;
+  const user = req.auth?.user as any;
 
   const isApiAuthRoute = nextUrl.pathname.includes("/api/auth");
   const isPublicRoute = nextUrl.pathname.includes("/login");
+  const isSuperRoute = nextUrl.pathname.includes("/super");
 
   if (isApiAuthRoute) return;
 
@@ -31,6 +33,11 @@ export default auth((req) => {
     return NextResponse.redirect(
       new URL(`/login?callbackUrl=${encodedCallbackUrl}`, nextUrl),
     );
+  }
+
+  // RBAC for Super-Admin routes
+  if (isSuperRoute && user?.role !== "SUPER_ADMIN") {
+    return NextResponse.redirect(new URL("/", nextUrl));
   }
 
   return intlMiddleware(req);

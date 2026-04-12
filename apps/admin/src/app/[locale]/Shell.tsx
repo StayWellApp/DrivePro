@@ -2,6 +2,7 @@ import { ReactNode } from "react";
 import Link from "next/link";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import StopImpersonatingButton from "./StopImpersonatingButton";
 
 export default async function Shell({
   children,
@@ -13,16 +14,15 @@ export default async function Shell({
   subtitle?: string;
 }) {
   const session = await auth();
-  const user = session?.user;
+  const user = session?.user as any;
 
   let schoolBranding = { customLogoUrl: null };
-  if (user) {
-    const fullUser = await prisma.user.findUnique({
-      where: { id: user.id },
-      include: { school: true }
+  if (user?.activeSchoolId) {
+    const school = await prisma.school.findUnique({
+      where: { id: user.activeSchoolId }
     });
-    if (fullUser?.school) {
-      schoolBranding.customLogoUrl = fullUser.school.customLogoUrl as any;
+    if (school) {
+      schoolBranding.customLogoUrl = school.customLogoUrl as any;
     }
   }
 
@@ -33,6 +33,10 @@ export default async function Shell({
     { label: "Students", href: "/students", icon: "users" },
     { label: "Finances", href: "/finances", icon: "wallet" },
   ];
+
+  if (user?.role === "SUPER_ADMIN") {
+    navItems.push({ label: "Control Tower", href: "/super", icon: "shield" });
+  }
 
   const initials = user?.email?.substring(0, 2).toUpperCase() || "AD";
 
@@ -64,6 +68,12 @@ export default async function Shell({
         </nav>
 
         <div className="p-8 border-t border-white/10">
+          {user?.impersonatedSchoolId && (
+            <div className="mb-4 p-3 bg-teal-500/10 border border-teal-500/20 rounded-xl">
+               <p className="text-[10px] font-black uppercase text-teal-400 mb-1">Impersonating School</p>
+               <StopImpersonatingButton />
+            </div>
+          )}
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-teal-500/30 flex items-center justify-center text-teal-400 font-bold">
               {initials}
@@ -72,7 +82,7 @@ export default async function Shell({
               <p className="text-sm font-bold truncate">
                 {user?.email || "Admin"}
               </p>
-              <p className="text-xs text-white/50">Global Admin</p>
+              <p className="text-xs text-white/50">{user?.role === 'SUPER_ADMIN' ? 'Super Admin' : 'School Admin'}</p>
             </div>
           </div>
         </div>
