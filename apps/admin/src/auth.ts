@@ -4,6 +4,7 @@ import { prisma } from "./lib/prisma";
 import bcrypt from "bcryptjs";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  trustHost: true,
   providers: [
     Credentials({
       name: "Credentials",
@@ -58,8 +59,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (session?.impersonatedSchoolId) {
           token.impersonatedSchoolId = session.impersonatedSchoolId;
           token.impersonatedRole = session.impersonatedRole || "ADMIN";
-          // If we are impersonating, we might want to update country/currency too
-          // but for now let's keep it simple or fetch if needed.
         } else if (session?.stopImpersonating) {
           token.impersonatedSchoolId = null;
           token.impersonatedRole = null;
