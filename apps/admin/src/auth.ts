@@ -16,6 +16,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         const user = await prisma.user.findUnique({
           where: { email: credentials.email as string },
+          include: {
+            school: {
+              include: {
+                country: true,
+              },
+            },
+          },
         });
 
         if (!user || !user.password) return null;
@@ -27,13 +34,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         if (!isValid) return null;
 
-        if (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN") return null;
-
         return {
           id: user.id,
           email: user.email,
           role: user.role,
           schoolId: user.school_id,
+          countryCode: user.school?.country?.isoCode || "CZ",
+          currency: user.school?.country?.currency || "CZK",
         };
       },
     }),
@@ -43,15 +50,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (user) {
         token.role = (user as any).role;
         token.schoolId = (user as any).schoolId;
+        token.countryCode = (user as any).countryCode;
+        token.currency = (user as any).currency;
       }
 
-      // Handle impersonation update
-      if (trigger === "update" && session?.impersonatedSchoolId) {
-        token.impersonatedSchoolId = session.impersonatedSchoolId;
-        token.impersonatedRole = "ADMIN"; // When impersonating, act as ADMIN
-      } else if (trigger === "update" && session?.stopImpersonating) {
-        token.impersonatedSchoolId = null;
-        token.impersonatedRole = null;
+      if (trigger === "update") {
+        if (session?.impersonatedSchoolId) {
+          token.impersonatedSchoolId = session.impersonatedSchoolId;
+          token.impersonatedRole = session.impersonatedRole || "ADMIN";
+          // If we are impersonating, we might want to update country/currency too
+          // but for now let's keep it simple or fetch if needed.
+        } else if (session?.stopImpersonating) {
+          token.impersonatedSchoolId = null;
+          token.impersonatedRole = null;
+        }
       }
 
       return token;
@@ -60,10 +72,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (session.user) {
         (session.user as any).role = token.role;
         (session.user as any).schoolId = token.schoolId;
+        (session.user as any).countryCode = token.countryCode;
+        (session.user as any).currency = token.currency;
         (session.user as any).impersonatedSchoolId = token.impersonatedSchoolId;
         (session.user as any).impersonatedRole = token.impersonatedRole;
 
-        // Use effective school ID and role for the UI
         (session.user as any).activeSchoolId = token.impersonatedSchoolId || token.schoolId;
         (session.user as any).activeRole = token.impersonatedRole || token.role;
       }

@@ -16,6 +16,7 @@ export default async function FinancesPage({
   }
 
   const studentId = (session.user as any).studentId;
+  const currency = (session.user as any).currency || "CZK";
   const t = await getTranslations({ locale, namespace: "Finances" });
 
   let student = null;
@@ -37,7 +38,9 @@ export default async function FinancesPage({
   }
 
   const balance = student.balance || 0;
-  const lessonEstimate = Math.floor(balance / 500); // 500 CZK per lesson for demo
+  // Dynamic lesson cost based on currency for demo purposes
+  const lessonCost = currency === "EUR" ? 20 : (currency === "PLN" ? 80 : 500);
+  const lessonEstimate = Math.floor(balance / lessonCost);
 
   return (
     <div className="p-8 max-w-7xl mx-auto w-full">
@@ -68,7 +71,7 @@ export default async function FinancesPage({
             </div>
             <div className="flex flex-col md:flex-row md:items-baseline md:gap-4 mt-4">
               <span className="text-7xl font-extrabold tracking-tighter">
-                {balance} CZK
+                {balance} {currency}
               </span>
               <span className="text-2xl font-light text-slate-400">
                 / {lessonEstimate} {t("lessons")}
@@ -175,7 +178,7 @@ export default async function FinancesPage({
                     <td
                       className={`px-8 py-5 text-right font-bold text-sm ${p.status === "succeeded" ? "text-teal-600" : "text-red-600"}`}
                     >
-                      {p.status === "succeeded" ? "+" : "-"} {p.amount} CZK
+                      {p.status === "succeeded" ? "+" : "-"} {p.amount} {currency}
                     </td>
                   </tr>
                 ))
