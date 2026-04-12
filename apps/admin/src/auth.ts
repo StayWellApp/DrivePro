@@ -27,26 +27,45 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         if (!isValid) return null;
 
-        if (user.role !== "ADMIN") return null;
+        if (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN") return null;
 
         return {
           id: user.id,
           email: user.email,
           role: user.role,
+          schoolId: user.school_id,
         };
       },
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
       if (user) {
         token.role = (user as any).role;
+        token.schoolId = (user as any).schoolId;
       }
+
+      // Handle impersonation update
+      if (trigger === "update" && session?.impersonatedSchoolId) {
+        token.impersonatedSchoolId = session.impersonatedSchoolId;
+        token.impersonatedRole = "ADMIN"; // When impersonating, act as ADMIN
+      } else if (trigger === "update" && session?.stopImpersonating) {
+        token.impersonatedSchoolId = null;
+        token.impersonatedRole = null;
+      }
+
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
         (session.user as any).role = token.role;
+        (session.user as any).schoolId = token.schoolId;
+        (session.user as any).impersonatedSchoolId = token.impersonatedSchoolId;
+        (session.user as any).impersonatedRole = token.impersonatedRole;
+
+        // Use effective school ID and role for the UI
+        (session.user as any).activeSchoolId = token.impersonatedSchoolId || token.schoolId;
+        (session.user as any).activeRole = token.impersonatedRole || token.role;
       }
       return session;
     },

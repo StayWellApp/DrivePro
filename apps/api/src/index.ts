@@ -44,6 +44,26 @@ app.get("/students/:id/intelligence", async (req: Request, res: Response): Promi
   }
 });
 
+app.get("/theory/questions", async (req: Request, res: Response): Promise<any> => {
+  const { studentId } = req.query;
+  try {
+    const student = await (prisma as any).student.findUnique({
+      where: { id: studentId as string },
+      include: { school: true }
+    });
+
+    if (!student) return res.status(404).json({ error: "Student not found" });
+
+    const questions = await (prisma as any).theoryQuestion.findMany({
+      where: { country_id: student.school.country_id }
+    });
+
+    return res.status(200).json(questions);
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to fetch questions" });
+  }
+});
+
 app.post("/students/:id/sponsor-link", async (req: Request, res: Response): Promise<any> => {
   const id = req.params.id as string;
   const { passcode } = req.body;
