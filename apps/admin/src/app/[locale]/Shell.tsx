@@ -3,6 +3,7 @@ import Link from "next/link";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import StopImpersonatingButton from "./StopImpersonatingButton";
+import ProfileSwitcher from "./ProfileSwitcher";
 
 export default async function Shell({
   children,
@@ -67,14 +68,22 @@ export default async function Shell({
           ))}
         </nav>
 
-        <div className="p-8 border-t border-white/10">
+        <div className="p-8 border-t border-white/10 space-y-4">
+          {user?.role === "SUPER_ADMIN" && (
+            <div className="p-3 bg-white/5 border border-white/10 rounded-xl">
+               <p className="text-[10px] font-black uppercase text-white/40 mb-2">Platform Controls</p>
+               <ProfileSwitcher />
+            </div>
+          )}
+
           {user?.impersonatedSchoolId && (
-            <div className="mb-4 p-3 bg-teal-500/10 border border-teal-500/20 rounded-xl">
-               <p className="text-[10px] font-black uppercase text-teal-400 mb-1">Impersonating School</p>
+            <div className="p-3 bg-teal-500/10 border border-teal-500/20 rounded-xl">
+               <p className="text-[10px] font-black uppercase text-teal-400 mb-1">Impersonating</p>
                <StopImpersonatingButton />
             </div>
           )}
-          <div className="flex items-center gap-3">
+
+          <div className="flex items-center gap-3 pt-2">
             <div className="w-10 h-10 rounded-full bg-teal-500/30 flex items-center justify-center text-teal-400 font-bold">
               {initials}
             </div>

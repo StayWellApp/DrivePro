@@ -1,5 +1,6 @@
 import Shell from "@/app/[locale]/Shell";
 import { prisma } from "@/lib/prisma";
+import NewQuestionForm from "./NewQuestionForm";
 
 export default async function GlobalTheoryBank() {
   const questions = await prisma.theoryQuestion.findMany({
@@ -23,10 +24,7 @@ export default async function GlobalTheoryBank() {
                </div>
             ))}
          </div>
-         <button className="bg-slate-900 text-white px-8 py-3 rounded-xl font-bold flex items-center gap-2 hover:scale-95 transition-transform">
-            <span className="material-symbols-outlined text-sm">add</span>
-            New Question
-         </button>
+         <NewQuestionForm countries={countries} />
       </div>
 
       <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">

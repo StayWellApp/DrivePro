@@ -1,6 +1,6 @@
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaView, StyleSheet } from "react-native";
-import { ActiveLessonScreen } from "./src/screens/ActiveLessonScreen";
+import ActiveLessonScreen from "./src/screens/ActiveLessonScreen";
 
 export default function App() {
   return (

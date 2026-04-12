@@ -1,73 +1,63 @@
 "use client";
 
 import { useState } from "react";
-import { signIn } from "next-auth/react";
+import { signIn, useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import React from "react";
+import React, { useEffect } from "react";
+import { LoginForm } from "@repo/ui";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/";
+  const { data: session, status } = useSession();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  useEffect(() => {
+    if (status === "authenticated" && session?.user) {
+      const role = (session.user as any).role;
+      if (role === "SUPER_ADMIN") {
+        router.push("/super");
+      } else if (role === "STUDENT") {
+        // Typically students shouldn't be here, but if they are, redirect to student app
+        window.location.href = process.env.NEXT_PUBLIC_STUDENT_APP_URL || "http://localhost:3001";
+      } else {
+        router.push(callbackUrl);
+      }
+    }
+  }, [session, status, router, callbackUrl]);
+
+  const handleSubmit = async (data: any) => {
+    setIsLoading(true);
     setError("");
 
     try {
       const res = await signIn("credentials", {
-        email,
-        password,
+        email: data.email,
+        password: data.password,
         redirect: false,
       });
 
       if (res?.error) {
-        setError("Invalid credentials");
-      } else {
-        router.push(callbackUrl);
+        setError("Invalid email or password. Please try again.");
       }
+      // Redirection is handled by the useEffect
     } catch (err) {
-      setError("An error occurred");
+      setError("An unexpected error occurred. Please try again later.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-slate-100">
-      <div className="p-8 bg-white rounded-lg shadow-md w-96">
-        <h1 className="text-2xl font-bold mb-6">Admin Login</h1>
-        {error && <p className="text-red-500 mb-4 text-sm">{error}</p>}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full border p-2 rounded"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full border p-2 rounded"
-              required
-            />
-          </div>
-          <button
-            type="submit"
-            className="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 transition"
-          >
-            Login
-          </button>
-        </form>
-      </div>
+    <div className="flex items-center justify-center min-h-screen bg-slate-50">
+      <LoginForm
+        onSubmit={handleSubmit}
+        isLoading={isLoading}
+        error={error}
+        title="Admin Portal"
+      />
     </div>
   );
 }

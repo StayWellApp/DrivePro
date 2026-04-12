@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { useParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 
 interface Question {
   id: string;
@@ -16,6 +17,7 @@ export default function TheoryTestPage() {
   const t = useTranslations("Theory");
   const params = useParams();
   const locale = params.locale as string;
+  const { data: session } = useSession();
 
   const [mode, setMode] = useState<"selection" | "practice" | "mock">(
     "selection",
@@ -52,24 +54,12 @@ export default function TheoryTestPage() {
 
   const fetchQuestions = async () => {
     try {
-      const studentId = localStorage.getItem("student_id") || "demo-student-id";
+      const studentId = (session?.user as any)?.studentId || "demo-student-id";
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/theory/questions?studentId=${studentId}`);
       const data = await response.json();
 
       if (data && data.length > 0) {
         setQuestions(data);
-      } else {
-        // Fallback mock questions if API fails or no questions for country
-        const mockQuestions: Question[] = [
-          {
-            id: "1",
-            question: locale === 'cs' ? "Jaká je maximální povolená rychlost v obci?" : "What is the maximum speed limit in a built-up area?",
-            options: ["30 km/h", "50 km/h", "70 km/h", "90 km/h"],
-            answer: "50 km/h",
-            explanation: locale === 'cs' ? "V obci je standardně povolena rychlost 50 km/h." : "The standard speed limit in built-up areas is 50 km/h.",
-          }
-        ];
-        setQuestions(mockQuestions);
       }
     } catch (error) {
       console.error("Failed to fetch questions", error);
@@ -77,7 +67,8 @@ export default function TheoryTestPage() {
   };
 
   const handleOptionClick = (option: string) => {
-    if (feedback && studyMode) return;
+    if (finished || (studyMode && feedback)) return;
+
     setSelectedOption(option);
     setUserAnswers({ ...userAnswers, [questions[currentIndex].id]: option });
 
@@ -121,7 +112,7 @@ export default function TheoryTestPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          studentId: localStorage.getItem("student_id") || "demo-student-id",
+          studentId: (session?.user as any)?.studentId || "demo-student-id",
           score: finalScore,
           total: questions.length,
           passed,

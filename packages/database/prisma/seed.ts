@@ -10,7 +10,7 @@ async function main() {
   const studentPassword = await bcrypt.hash("student123", 10);
 
   // 1. Create Countries
-  const czechia = await (prisma as any).country.upsert({
+  const czechia = await prisma.country.upsert({
     where: { isoCode: "CZ" },
     update: {},
     create: {
@@ -21,7 +21,7 @@ async function main() {
     },
   });
 
-  const slovakia = await (prisma as any).country.upsert({
+  const slovakia = await prisma.country.upsert({
     where: { isoCode: "SK" },
     update: {},
     create: {
@@ -32,12 +32,26 @@ async function main() {
     },
   });
 
-  console.log("Created countries: CZ, SK");
+  const poland = await prisma.country.upsert({
+    where: { isoCode: "PL" },
+    update: {},
+    create: {
+      name: "Poland",
+      isoCode: "PL",
+      currency: "PLN",
+      languageCode: "pl",
+    },
+  });
 
-  // 2. Create SUPER_ADMIN
+  console.log("Created countries: CZ, SK, PL");
+
+  // 2. Create SUPER_ADMIN (God Mode)
   const superAdmin = await prisma.user.upsert({
     where: { email: "owner@drivepro.com" },
-    update: {},
+    update: {
+      password: superAdminPassword,
+      role: Role.SUPER_ADMIN,
+    },
     create: {
       email: "owner@drivepro.com",
       password: superAdminPassword,
@@ -49,149 +63,133 @@ async function main() {
 
   console.log("Created super admin user:", superAdmin.email);
 
-  // 3. Create Default School
-  const school = await prisma.school.upsert({
-    where: { id: "default-school" },
-    update: {
-      country_id: czechia.id,
-    },
+  // 3. Create CZ School & Users
+  const czSchool = await prisma.school.upsert({
+    where: { id: "cz-school" },
+    update: { country_id: czechia.id },
     create: {
-      id: "default-school",
-      name: "DrivePro Academy",
+      id: "cz-school",
+      name: "DrivePro Prague",
       country_id: czechia.id,
     },
   });
 
-  console.log("Created school:", school.name);
-
-  // 4. Create Global Admin User
-  const admin = await prisma.user.upsert({
-    where: { email: "admin@drivepro.com" },
-    update: {},
+  const czAdmin = await prisma.user.upsert({
+    where: { email: "admin.cz@drivepro.com" },
+    update: { school_id: czSchool.id },
     create: {
-      email: "admin@drivepro.com",
+      email: "admin.cz@drivepro.com",
       password: adminPassword,
       role: Role.ADMIN,
-      school_id: school.id,
-      firstName: "Global",
+      school_id: czSchool.id,
+      firstName: "Czech",
       lastName: "Admin",
     },
   });
 
-  console.log("Created admin user:", admin.email);
-
-  // 5. Create a Demo Instructor
-  const instructorUser = await prisma.user.upsert({
-    where: { email: "instructor@example.com" },
-    update: {},
+  const czStudentUser = await prisma.user.upsert({
+    where: { email: "student.cz@drivepro.com" },
+    update: { school_id: czSchool.id },
     create: {
-      email: "instructor@example.com",
-      password: instructorPassword,
-      role: Role.INSTRUCTOR,
-      school_id: school.id,
-      firstName: "Petr",
-      lastName: "Marek",
-      phoneNumber: "+420 777 000 111",
-    },
-  });
-
-  const instructor = await prisma.instructor.upsert({
-    where: { user_id: instructorUser.id },
-    update: {},
-    create: {
-      user_id: instructorUser.id,
-      school_id: school.id,
-    },
-  });
-
-  console.log("Created instructor user and record:", instructorUser.email);
-
-  // 6. Create a Demo Student User & Student Record
-  const studentUser = await prisma.user.upsert({
-    where: { email: "student@example.com" },
-    update: {},
-    create: {
-      email: "student@example.com",
+      email: "student.cz@drivepro.com",
       password: studentPassword,
       role: Role.STUDENT,
-      school_id: school.id,
+      school_id: czSchool.id,
       firstName: "Jan",
       lastName: "Novak",
-      phoneNumber: "+420 600 500 400",
     },
   });
 
-  const student = await prisma.student.upsert({
-    where: { user_id: studentUser.id },
-    update: {},
+  await prisma.student.upsert({
+    where: { user_id: czStudentUser.id },
+    update: { school_id: czSchool.id },
     create: {
-      user_id: studentUser.id,
-      school_id: school.id,
-      instructor_id: instructor.id,
+      user_id: czStudentUser.id,
+      school_id: czSchool.id,
       courseType: CourseType.B,
-      balance: 500,
+      balance: 1000,
     },
   });
 
-  console.log("Created student user and record:", studentUser.email);
+  // 4. Create SK School & Users
+  const skSchool = await prisma.school.upsert({
+    where: { id: "sk-school" },
+    update: { country_id: slovakia.id },
+    create: {
+      id: "sk-school",
+      name: "DrivePro Bratislava",
+      country_id: slovakia.id,
+    },
+  });
 
-  // 7. Theory Questions (Czech & English)
+  const skAdmin = await prisma.user.upsert({
+    where: { email: "admin.sk@drivepro.com" },
+    update: { school_id: skSchool.id },
+    create: {
+      email: "admin.sk@drivepro.com",
+      password: adminPassword,
+      role: Role.ADMIN,
+      school_id: skSchool.id,
+      firstName: "Slovak",
+      lastName: "Admin",
+    },
+  });
+
+  const skStudentUser = await prisma.user.upsert({
+    where: { email: "student.sk@drivepro.com" },
+    update: { school_id: skSchool.id },
+    create: {
+      email: "student.sk@drivepro.com",
+      password: studentPassword,
+      role: Role.STUDENT,
+      school_id: skSchool.id,
+      firstName: "Igor",
+      lastName: "Horvath",
+    },
+  });
+
+  await prisma.student.upsert({
+    where: { user_id: skStudentUser.id },
+    update: { school_id: skSchool.id },
+    create: {
+      user_id: skStudentUser.id,
+      school_id: skSchool.id,
+      courseType: CourseType.B,
+      balance: 50,
+    },
+  });
+
+  console.log("Seeded CZ and SK schools and students");
+
+  // 5. Theory Questions (Native + Translations)
   const theoryQuestions = [
     {
-      id: "q1",
-      question: "Jaká je maximální povolená rychlost v obci, není-li dopravní značkou stanoveno jinak?",
+      id: "cz-q1",
+      question: "Jaká je maximální povolená rychlost v obci?",
       language: "cs",
-      options: ["30 km/h", "50 km/h", "70 km/h", "90 km/h"],
+      options: ["30 km/h", "50 km/h", "70 km/h"],
       answer: "50 km/h",
       country_id: czechia.id
     },
     {
-      id: "q1-en",
-      question: "What is the maximum speed limit in a built-up area unless otherwise indicated by a traffic sign?",
-      language: "en",
-      options: ["30 km/h", "50 km/h", "70 km/h", "90 km/h"],
+      id: "sk-q1",
+      question: "Aká je maximálna povolená rýchlosť v obci?",
+      language: "sk",
+      options: ["30 km/h", "50 km/h", "70 km/h"],
       answer: "50 km/h",
-      country_id: czechia.id
-    },
-    {
-      id: "q2",
-      question: "Kdy musí řidič dát znamení o změně směru jízdy?",
-      language: "cs",
-      options: ["Pouze v noci", "Před zahájením jízdního úkonu", "Až během odbočování", "Není to nutné"],
-      answer: "Před zahájením jízdního úkonu",
-      country_id: czechia.id
-    },
-    {
-      id: "q2-en",
-      question: "When must a driver give a signal of a change in direction of travel?",
-      language: "en",
-      options: ["Only at night", "Before starting the driving maneuver", "Only during turning", "It is not necessary"],
-      answer: "Before starting the driving maneuver",
-      country_id: czechia.id
+      country_id: slovakia.id
     }
   ];
 
   for (const q of theoryQuestions) {
-    await (prisma as any).theoryQuestion.upsert({
+    await prisma.theoryQuestion.upsert({
       where: { id: q.id },
-      update: {
-        question: q.question,
-        language: q.language,
-        options: q.options,
-        answer: q.answer,
-        country_id: q.country_id
-      },
-      create: {
-        id: q.id,
-        question: q.question,
-        language: q.language,
-        options: q.options,
-        answer: q.answer,
-        country_id: q.country_id
-      }
+      update: q,
+      create: q,
     });
   }
-  console.log("Seeded theory questions");
+
+  console.log("Seeded multi-country theory questions");
 }
 
 main()
