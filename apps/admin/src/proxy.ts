@@ -10,15 +10,16 @@ export default auth((req) => {
   const isLoggedIn = !!req.auth;
   const user = req.auth?.user as any;
 
-  const isApiAuthRoute = nextUrl.pathname.includes("/api/auth");
-  const isPublicRoute = nextUrl.pathname.includes("/login");
+  // Manual list of public paths that should NOT trigger a redirect to login
+  const publicPaths = ["/login", "/api/auth", "/api/auth/force-signout"];
+  const isPublicRoute = publicPaths.some(path => nextUrl.pathname.includes(path));
+
   const isSuperRoute = nextUrl.pathname.includes("/super");
 
-  if (isApiAuthRoute) return;
-
   if (isPublicRoute) {
-    if (isLoggedIn) {
-      return NextResponse.redirect(new URL("/", nextUrl));
+    // If logged in and hitting login page, go to dashboard
+    if (isLoggedIn && nextUrl.pathname.includes("/login")) {
+       return NextResponse.redirect(new URL("/", nextUrl));
     }
     return intlMiddleware(req);
   }
@@ -30,9 +31,11 @@ export default auth((req) => {
     }
 
     const encodedCallbackUrl = encodeURIComponent(callbackUrl);
-    return NextResponse.redirect(
-      new URL(`/login?callbackUrl=${encodedCallbackUrl}`, nextUrl),
-    );
+    // Explicitly redirect to /[locale]/login to avoid loops if / redirects
+    const locale = nextUrl.pathname.split('/')[1] || "cs";
+    const loginUrl = `/${locale}/login?callbackUrl=${encodedCallbackUrl}`;
+
+    return NextResponse.redirect(new URL(loginUrl, nextUrl));
   }
 
   // RBAC for Super-Admin routes
@@ -44,7 +47,6 @@ export default auth((req) => {
 });
 
 export const config = {
-  // Match only internationalized pathnames
   matcher: [
     "/",
     "/(cs|en|sk)/:path*",

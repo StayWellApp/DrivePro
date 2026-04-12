@@ -83,7 +83,17 @@ export default async function Shell({
           )}
 
           <div className="pt-2 border-t border-white/5">
-             <UserAccountNav user={user} />
+             {session ? (
+               <UserAccountNav user={user} />
+             ) : (
+               <Link
+                 href="/api/auth/force-signout"
+                 className="flex items-center gap-3 px-4 py-3 rounded-xl bg-red-500/10 text-red-400 font-bold text-xs uppercase tracking-widest"
+               >
+                 <span className="material-symbols-outlined text-sm">logout</span>
+                 Stuck? Reset Session
+               </Link>
+             )}
           </div>
         </div>
       </aside>

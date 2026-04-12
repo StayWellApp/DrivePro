@@ -26,7 +26,7 @@ test('SaaS Owner Onboarding Flow', async ({ page }) => {
   await expect(page.getByText('Impersonating')).toBeVisible();
 
   // 7. Log out
-  await page.getByRole('button', { name: 'admin@drivepro.io' }).click();
+  await page.getByRole('button', { name: 'owner@drivepro.com' }).click();
   await page.getByRole('button', { name: 'Sign Out' }).click();
 
   // 8. Verify back at login

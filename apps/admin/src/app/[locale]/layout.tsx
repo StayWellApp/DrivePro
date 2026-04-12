@@ -2,6 +2,7 @@ import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
 import { ReactNode } from "react";
 import "../globals.css";
+import { auth } from "@/auth";
 
 export default async function RootLayout({
   children,
@@ -12,6 +13,9 @@ export default async function RootLayout({
 }) {
   const { locale } = await params;
   const messages = await getMessages();
+  const session = await auth();
+
+  console.log("DEBUG SESSION [ADMIN]:", session ? "LOGGED IN" : "NULL", session?.user?.email || "NO EMAIL");
 
   return (
     <html lang={locale ?? "cs"}>
