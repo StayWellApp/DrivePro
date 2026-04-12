@@ -1,5 +1,6 @@
-import Shell from "@/app/[locale]/Shell";
+import Shell from "../Shell";
 import { ObservatoryCard, DataChip } from "@repo/ui";
+import Link from "next/link";
 
 export default function Dashboard() {
   const fleetData = [
@@ -24,6 +25,25 @@ export default function Dashboard() {
       title="Observatory"
       subtitle="Real-time performance analytics and fleet health monitoring."
     >
+      {/* Emergency Reset Alert */}
+      <div className="mb-12 p-6 bg-red-50 border border-red-100 rounded-[30px] flex items-center justify-between shadow-sm">
+        <div className="flex items-center gap-4">
+           <div className="w-12 h-12 bg-red-500 rounded-2xl flex items-center justify-center shadow-lg shadow-red-500/20">
+              <span className="material-symbols-outlined text-white">warning</span>
+           </div>
+           <div>
+              <p className="font-black text-slate-900 uppercase tracking-tight">Session Conflict Detected?</p>
+              <p className="text-sm text-slate-500 font-medium">If you are seeing incorrect data or are unable to log out, use the reset tool.</p>
+           </div>
+        </div>
+        <Link
+          href="/api/auth/force-signout"
+          className="bg-slate-900 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl shadow-slate-900/10"
+        >
+          Reset Session Now
+        </Link>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8 mb-12">
         <ObservatoryCard className="flex flex-col justify-between min-h-[240px]">
           <div>
