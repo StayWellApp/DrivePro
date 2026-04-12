@@ -10,6 +10,8 @@ import { TelemetrySyncSchema } from "@repo/schema";
 import cron from "node-cron";
 import { sendLessonReminder } from "./services/notifications.js";
 import multer from "multer";
+import rateLimit from "express-rate-limit";
+import { calculateVideoOffset } from "./services/videoProcessor.js";
 
 const app = express();
 const server = createServer(app);
@@ -21,11 +23,17 @@ const io = new Server(server, {
   },
 });
 
+const syncLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  message: "Too many sync requests from this IP, please try again after 15 minutes"
+});
+
 app.use(cors());
 app.use(express.json());
 
 app.get("/students/:id/intelligence", async (req: Request, res: Response): Promise<any> => {
-  const studentId = req.params.id;
+  const studentId = req.params.id as string;
   try {
     const hotspots = await getHotspots(studentId);
     const readiness = await getReadinessScore(studentId);
@@ -37,7 +45,7 @@ app.get("/students/:id/intelligence", async (req: Request, res: Response): Promi
 });
 
 app.post("/students/:id/sponsor-link", async (req: Request, res: Response): Promise<any> => {
-  const { id } = req.params;
+  const id = req.params.id as string;
   const { passcode } = req.body;
   try {
     const token = generateSignedToken(id);
@@ -56,8 +64,8 @@ app.post("/students/:id/sponsor-link", async (req: Request, res: Response): Prom
 });
 
 app.get("/shared/:token/verify", async (req: Request, res: Response): Promise<any> => {
-  const { token } = req.params;
-  const { passcode } = req.query;
+  const token = req.params.token as string;
+  const passcode = req.query.passcode as string;
   try {
     const studentId = verifySignedToken(token);
     if (!studentId) return res.status(401).json({ error: "Invalid or expired token" });
@@ -77,7 +85,7 @@ app.get("/shared/:token/verify", async (req: Request, res: Response): Promise<an
 });
 
 app.patch("/lessons/:id/cancel", async (req: Request, res: Response): Promise<any> => {
-  const { id } = req.params;
+  const id = req.params.id as string;
   const { mode } = req.body;
 
   try {
@@ -108,7 +116,7 @@ app.patch("/lessons/:id/cancel", async (req: Request, res: Response): Promise<an
 });
 
 app.post("/students/:id/manual-credit", async (req: Request, res: Response): Promise<any> => {
-  const { id } = req.params;
+  const id = req.params.id as string;
   const { amount, credits } = req.body;
 
   try {
@@ -150,6 +158,28 @@ app.post("/theory/attempts", async (req: Request, res: Response): Promise<any> =
     return res.status(200).json(attempt);
   } catch (error) {
     return res.status(500).json({ error: "Failed to save theory attempt" });
+  }
+});
+
+app.patch("/lessons/:id/faults", syncLimiter, async (req: Request, res: Response): Promise<any> => {
+  const id = req.params.id as string;
+  const { faultPins } = req.body;
+
+  try {
+    const lesson = await (prisma as any).lesson.findUnique({
+      where: { id }
+    });
+
+    if (!lesson) return res.status(404).json({ error: "Lesson not found" });
+
+    const updatedPins = faultPins.map((pin: any) => ({
+      ...pin,
+      video_offset_seconds: calculateVideoOffset(new Date(pin.timestamp), lesson.videoStartTime)
+    }));
+
+    return res.status(200).json({ updatedPins });
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to update fault pins" });
   }
 });
 

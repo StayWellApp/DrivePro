@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import DashcamToast from "@/components/DashcamToast";
 import ReplayWrapper from "@/components/ReplayWrapper";
+import LessonTour from "@/components/LessonTour";
+import SupportButton from "@/components/SupportButton";
 
 export default async function LessonDetailPage({
   params,
@@ -18,6 +20,7 @@ export default async function LessonDetailPage({
     lesson = await prisma.lesson.findUnique({
       where: { id },
       include: {
+        school: true,
         instructor: true,
         vehicle: true,
         telemetryChunks: true,
@@ -52,6 +55,7 @@ export default async function LessonDetailPage({
 
   return (
     <div className="flex flex-col min-h-screen bg-[#0F172A] text-white">
+      <LessonTour />
       <header className="p-8 border-b border-white/5 flex justify-between items-end">
         <div>
           <nav className="flex items-center gap-2 text-[10px] font-black tracking-[0.2em] text-teal-500 uppercase mb-4">
@@ -67,10 +71,13 @@ export default async function LessonDetailPage({
              </h1>
              <DashcamToast />
           </div>
-          <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs flex items-center gap-2 mt-2">
-            <span className="material-symbols-outlined text-sm">calendar_today</span>
-            {new Intl.DateTimeFormat(locale, { dateStyle: 'long' }).format(lesson.startTime)}
-          </p>
+          <div className="flex items-center gap-4 mt-2">
+            <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs flex items-center gap-2">
+              <span className="material-symbols-outlined text-sm">calendar_today</span>
+              {new Intl.DateTimeFormat(locale, { dateStyle: 'long' }).format(lesson.startTime)}
+            </p>
+            <SupportButton lessonId={id} metadata={{ chunkCount: lesson.telemetryChunks.length }} />
+          </div>
         </div>
         <div className="flex gap-4">
             <div className="text-right">
@@ -89,6 +96,7 @@ export default async function LessonDetailPage({
         <div className="max-w-7xl mx-auto">
            <ReplayWrapper
               route={routePoints}
+              videoUrl={lesson.videoUrl}
               faults={faults}
               labels={{
                 start: t("start"),

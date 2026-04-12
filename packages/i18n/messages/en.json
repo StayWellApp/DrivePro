@@ -147,7 +147,8 @@
     "closeIntelligence": "CLOSE INTELLIGENCE",
     "start": "Start",
     "end": "End",
-    "replayAnalysis": "Replay sequence & analysis available"
+    "replayAnalysis": "Replay sequence & analysis available",
+    "videoProcessing": "Video is being optimized, check back in 10 minutes"
   },
   "Fleet": {
     "title": "Fleet Management",

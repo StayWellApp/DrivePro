@@ -1,48 +1,39 @@
 import React, { useState, useEffect } from "react";
 import {
-  StyleSheet,
-  Text,
   View,
+  Text,
   TouchableOpacity,
-  Alert,
+  StyleSheet,
   SafeAreaView,
   ScrollView,
+  Alert,
 } from "react-native";
-import * as Haptics from "expo-haptics";
 import * as Location from "expo-location";
+import * as Haptics from "expo-haptics";
 import * as TaskManager from "expo-task-manager";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import io from "socket.io-client";
+import { io } from "socket.io-client";
 
-const FAULT_CATEGORIES = [
-  "Observation",
-  "Vehicle Control",
-  "Speed Management",
-  "Awareness",
-  "Signage",
-];
-
-// Kinetic Precision Colors
 const COLORS = {
-  primary: "#0F172A", // Deep Navy
-  secondary: "#2DD4BF", // Electric Teal
+  primary: "#0F172A",
+  secondary: "#2DD4BF",
   surface: "#F7F9FB",
-  dangerous: "#EF4444", // Red
-  serious: "#F59E0B", // Orange/Amber
-  minor: "#2DD4BF", // Teal
-  textMain: "#191C1E",
-  textVariant: "#45464D",
   white: "#FFFFFF",
+  textVariant: "#64748B",
+  minor: "#FACC15",
+  serious: "#F97316",
+  dangerous: "#EF4444",
 };
 
-const MOCK_LESSON_ID = "lesson-123";
-const MOCK_SCHOOL_ID = "school-456";
-const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://10.0.2.2:8080";
-const TELEMETRY_STORAGE_KEY = "@current_lesson_telemetry";
+const FAULT_CATEGORIES = ["Observation", "Control", "Speed", "Signs", "Awareness"];
+const BACKGROUND_LOCATION_TASK = "BACKGROUND_LOCATION_TASK";
+const TELEMETRY_STORAGE_KEY = "@lesson_telemetry";
 const SYNC_QUEUE_KEY = "@sync_queue";
+const API_URL = "http://localhost:8080";
+const MOCK_LESSON_ID = "L-12345";
+const MOCK_SCHOOL_ID = "S-67890";
 
 const socket = io(API_URL);
-const BACKGROUND_LOCATION_TASK = "BACKGROUND_LOCATION_TASK";
 
 TaskManager.defineTask(
   BACKGROUND_LOCATION_TASK,
@@ -62,12 +53,11 @@ TaskManager.defineTask(
           timestamp: new Date(loc.timestamp).toISOString(),
         }));
 
-        // Zero-movement filtering: Only add if changed or time gap > 30s
         const lastPoint = telemetry[telemetry.length - 1];
         const filteredNewPoints = newPoints.filter((p: any) => {
            if (!lastPoint) return true;
            const dist = Math.sqrt(Math.pow(p.lat - lastPoint.lat, 2) + Math.pow(p.lng - lastPoint.lng, 2));
-           return dist > 0.00001; // Approx 1 meter
+           return dist > 0.00001;
         });
 
         if (filteredNewPoints.length > 0) {
@@ -85,18 +75,21 @@ export function ActiveLessonScreen() {
   const [isSocketConnected, setIsSocketConnected] = useState(false);
   const [isLessonActive, setIsLessonActive] = useState(false);
   const [currentFaults, setCurrentFaults] = useState<any[]>([]);
+  const [rank, setRank] = useState<number | null>(null);
 
   useEffect(() => {
     socket.on("connect", () => {
       setIsSocketConnected(true);
       socket.emit("join_school", MOCK_SCHOOL_ID);
-      // Auto-retry queue when connection restored
       processSyncQueue();
     });
 
     socket.on("disconnect", () => {
       setIsSocketConnected(false);
     });
+
+    // Fetch rank (mocking API call)
+    setRank(3);
 
     return () => {
       socket.off("connect");
@@ -111,8 +104,6 @@ export function ActiveLessonScreen() {
 
       const queue = JSON.parse(queueJson);
       if (queue.length === 0) return;
-
-      console.log(`Retrying sync for ${queue.length} items...`);
 
       const remaining = [];
       for (const item of queue) {
@@ -153,11 +144,6 @@ export function ActiveLessonScreen() {
       accuracy: Location.Accuracy.High,
       timeInterval: 5000,
       distanceInterval: 5,
-      foregroundService: {
-        notificationTitle: "DrivePro Active Tracking",
-        notificationBody: "Recording lesson telemetry...",
-        notificationColor: COLORS.secondary,
-      },
     });
 
     setIsLessonActive(true);
@@ -190,13 +176,11 @@ export function ActiveLessonScreen() {
         throw new Error("Server error");
       }
     } catch (error) {
-      console.log("Offline or sync failed, queueing...");
       const queueJson = await AsyncStorage.getItem(SYNC_QUEUE_KEY);
       const queue = queueJson ? JSON.parse(queueJson) : [];
       queue.push({ lessonId: MOCK_LESSON_ID, data: syncData, timestamp: new Date().toISOString() });
       await AsyncStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify(queue));
-
-      Alert.alert("Offline Mode", "Sync failed. Data stored locally and will retry when connection is restored.");
+      Alert.alert("Offline Mode", "Sync failed. Data stored locally.");
     }
   };
 
@@ -234,8 +218,18 @@ export function ActiveLessonScreen() {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.title}>{isLessonActive ? "RECORDING" : "ACTIVE LESSON"}</Text>
-          <Text style={styles.subtitle}>SESSION #L-12345</Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <View>
+              <Text style={styles.title}>{isLessonActive ? "RECORDING" : "ACTIVE LESSON"}</Text>
+              <Text style={styles.subtitle}>SESSION #L-12345</Text>
+            </View>
+            {!isLessonActive && rank && (
+              <View style={styles.performanceCard}>
+                <Text style={styles.performanceRank}>#{rank}</Text>
+                <Text style={styles.performanceLabel}>RANK</Text>
+              </View>
+            )}
+          </View>
         </View>
 
         <View style={styles.categorySelector}>
@@ -290,6 +284,9 @@ const styles = StyleSheet.create({
   header: { marginBottom: 20, marginTop: 10 },
   title: { fontSize: 32, fontWeight: "900", color: COLORS.primary, letterSpacing: -1 },
   subtitle: { fontSize: 12, fontWeight: "700", color: COLORS.textVariant, letterSpacing: 1, marginTop: 2 },
+  performanceCard: { backgroundColor: COLORS.secondary, padding: 12, borderRadius: 16, alignItems: 'center' },
+  performanceRank: { fontSize: 20, fontWeight: "900", color: COLORS.primary },
+  performanceLabel: { fontSize: 8, fontWeight: "800", color: COLORS.primary, opacity: 0.6 },
   categorySelector: { marginBottom: 24 },
   scrollContent: { paddingRight: 24 },
   categoryChip: { paddingHorizontal: 16, paddingVertical: 10, backgroundColor: COLORS.white, borderRadius: 20, marginRight: 8, borderWidth: 1, borderColor: "#E2E8F0" },

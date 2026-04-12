@@ -9,6 +9,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 export const createCheckoutSession = async (
   studentId: string,
   amount: number,
+  currency: string = "czk"
 ) => {
   const student = await prisma.student.findUnique({
     where: { id: studentId },
@@ -23,7 +24,7 @@ export const createCheckoutSession = async (
     line_items: [
       {
         price_data: {
-          currency: "czk",
+          currency: currency.toLowerCase(),
           product_data: {
             name: "Lesson Credits Top-up",
           },

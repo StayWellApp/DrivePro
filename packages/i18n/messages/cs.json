@@ -147,7 +147,8 @@
     "closeIntelligence": "ZAVŘÍT STATISTIKY",
     "start": "Začátek",
     "end": "Konec",
-    "replayAnalysis": "Analýza záznamu k dispozici"
+    "replayAnalysis": "Analýza záznamu k dispozici",
+    "videoProcessing": "Video se optimalizuje, zkuste to prosím za 10 minut"
   },
   "Fleet": {
     "title": "Správa Vozového Parku",
