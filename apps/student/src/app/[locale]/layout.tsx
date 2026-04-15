@@ -124,7 +124,17 @@ export default async function RootLayout({
                 </button>
 
                 <div className="pt-4 border-t border-slate-200/60 dark:border-slate-800/60">
-                   <UserAccountNav user={session?.user as any} />
+                   <Link
+                     href="/api/auth/force-signout"
+                     className="flex items-center gap-3 px-4 py-3 rounded-xl text-red-500 hover:bg-red-500/10 transition-all group w-full"
+                   >
+                     <span className="material-symbols-outlined text-red-500/60 group-hover:text-red-500 transition-colors">
+                       logout
+                     </span>
+                     <span className="text-[11px] font-black uppercase tracking-widest">
+                       Logout
+                     </span>
+                   </Link>
                 </div>
               </div>
             </aside>
@@ -158,10 +168,7 @@ export default async function RootLayout({
                     <span className="material-symbols-outlined text-slate-400 hover:text-teal-500 cursor-pointer transition-colors">
                       help
                     </span>
-                    <Link href="/api/auth/force-signout" className="flex items-center gap-1 px-3 py-1.5 bg-red-500/10 text-red-500 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all">
-                       <span className="material-symbols-outlined text-sm">power_settings_new</span>
-                       Force Logout
-                    </Link>
+                    <UserAccountNav user={session?.user as any} />
                   </div>
                 </div>
               </header>

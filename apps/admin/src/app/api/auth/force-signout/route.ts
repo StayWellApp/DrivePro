@@ -9,8 +9,9 @@ export async function GET(request: Request) {
     if (match) locale = match[1];
   }
 
-  // Explicitly construct the login URL
-  const loginUrl = `${url.origin}/${locale}/login`;
+  // Explicitly construct the login URL using a relative path if possible,
+  // but NextResponse.redirect requires an absolute URL. url.origin is safe here.
+  const loginUrl = new URL(`/${locale}/login`, url.origin);
   const response = NextResponse.redirect(loginUrl);
 
   // Thorough cookie clearance

@@ -15,8 +15,8 @@ interface UserAccountNavProps {
 
 export const UserAccountNav: React.FC<UserAccountNavProps> = ({ user }) => {
   const handleSignOut = () => {
-    // Using window.location.origin to ensure we stay on the same domain/port
-    signOut({ callbackUrl: `${window.location.origin}/login` });
+    // Using relative path for better cross-environment compatibility
+    signOut({ callbackUrl: "/login" });
   };
 
   if (!user) {

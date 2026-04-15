@@ -53,17 +53,7 @@ export default async function Shell({
           )}
         </div>
 
-        <div className="px-6 mb-8">
-           <Link
-             href="/api/auth/force-signout"
-             className="flex items-center justify-center gap-2 w-full py-3 bg-red-500 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-red-600 transition-all shadow-lg shadow-red-500/20"
-           >
-             <span className="material-symbols-outlined text-sm">power_settings_new</span>
-             Force Log Out
-           </Link>
-        </div>
-
-        <nav className="flex-1 px-4 space-y-1 overflow-y-auto">
+        <nav className="flex-1 px-4 space-y-1 overflow-y-auto mt-4">
           {navItems.map((item) => (
             <Link
               key={item.href}
@@ -95,8 +85,18 @@ export default async function Shell({
             </div>
           )}
 
-          <div className="px-2">
-             <UserAccountNav user={user} />
+          <div className="px-2 border-t border-white/10 pt-4">
+             <Link
+               href="/api/auth/force-signout"
+               className="flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 transition-all group w-full"
+             >
+               <span className="material-symbols-outlined text-red-400/60 group-hover:text-red-400 transition-colors">
+                 logout
+               </span>
+               <span className="text-sm font-bold tracking-wide">
+                 Logout
+               </span>
+             </Link>
           </div>
         </div>
       </aside>
@@ -124,13 +124,9 @@ export default async function Shell({
             </div>
           </div>
 
-          <Link
-            href="/api/auth/force-signout"
-            className="flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 rounded-xl text-slate-900 font-bold text-sm hover:bg-slate-50 transition-all shadow-sm"
-          >
-            <span className="material-symbols-outlined text-lg">logout</span>
-            Sign Out
-          </Link>
+          <div className="flex items-center gap-4">
+            <UserAccountNav user={user} />
+          </div>
         </header>
 
         <section>{children}</section>
