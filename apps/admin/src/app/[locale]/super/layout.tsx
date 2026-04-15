@@ -66,7 +66,7 @@ export default async function SuperLayout({
           </Link>
 
           <div className="pt-2">
-             <UserAccountNav user={user} locale={locale} />
+             <UserAccountNav user={user} />
           </div>
         </div>
       </aside>
