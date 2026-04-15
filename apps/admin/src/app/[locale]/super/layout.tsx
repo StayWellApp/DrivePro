@@ -17,14 +17,14 @@ export default async function SuperLayout({
 
   // Strict Super-Admin check
   if (user?.role !== "SUPER_ADMIN") {
-    redirect("/${locale}/login");
+    redirect(`/${locale}/login`);
   }
 
   const superNavItems = [
-    { label: "Command Center", href: "/${locale}/super", icon: "terminal" },
-    { label: "Schools Management", href: "/${locale}/super/schools", icon: "domain" },
-    { label: "Global Theory Bank", href: "/${locale}/super/theory", icon: "menu_book" },
-    { label: "System Analytics", href: "/${locale}/super/analytics", icon: "analytics" },
+    { label: "Command Center", href: `/${locale}/super`, icon: "terminal" },
+    { label: "Schools Management", href: `/${locale}/super/schools`, icon: "domain" },
+    { label: "Global Theory Bank", href: `/${locale}/super/theory`, icon: "menu_book" },
+    { label: "System Analytics", href: `/${locale}/super/analytics`, icon: "analytics" },
   ];
 
   return (
@@ -58,7 +58,7 @@ export default async function SuperLayout({
 
         <div className="p-6 space-y-4 bg-black/20 mt-auto border-t border-white/5">
           <Link
-            href="/${locale}/dashboard"
+            href={`/${locale}/dashboard`}
             className="flex items-center justify-center gap-2 w-full py-4 bg-teal-500 text-slate-950 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-teal-400 transition-all shadow-lg shadow-teal-500/10"
           >
             <span className="material-symbols-outlined text-sm">exit_to_app</span>
@@ -66,7 +66,7 @@ export default async function SuperLayout({
           </Link>
 
           <div className="pt-2">
-             <UserAccountNav user={user} />
+             <UserAccountNav user={user} locale={locale} />
           </div>
         </div>
       </aside>

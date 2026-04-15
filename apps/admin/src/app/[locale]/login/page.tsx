@@ -21,10 +21,9 @@ export default function LoginPage() {
       if (role === "SUPER_ADMIN") {
         router.push("/super");
       } else if (role === "STUDENT") {
-        // Redirect students to their own portal root
-        window.location.href = "/";
+        // Use window.location.origin to ensure we are not redirected to localhost:3000 by accident
+        window.location.href = `${window.location.origin}/`;
       } else {
-        // Default to dashboard for SCHOOL_ADMIN or others
         router.push(callbackUrl || "/dashboard");
       }
     }

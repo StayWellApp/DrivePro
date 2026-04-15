@@ -86,14 +86,12 @@ api:dev: Node.js v22.22.1
 api:dev: [31m[nodemon] app crashed - waiting for file changes before starting...[39m
 admin:dev: ⨯ Another next dev server is already running.
 admin:dev:
-admin:dev: - Local:        http://localhost:3000
-admin:dev: - PID:          1532514
-admin:dev: - Dir:          /app/apps/admin
-admin:dev: - Log:          .next/dev/logs/next-development.log
-admin:dev:
-admin:dev: Run kill 1532514 to stop it.
-admin:dev: [?25h
-admin:dev: npm error Lifecycle script `dev` failed with error:
+admin:dev: - Local:        http://localhos@repo/ui:dev:components: [2J[3J[H4:47:03 PM - File change detected. Starting incremental compilation...
+@repo/ui:dev:components:
+@repo/ui:dev:components:
+@repo/ui:dev:components: 4:47:04 PM - Found 0 errors. Watching for file changes.
+ ERROR  run failed: command  exited (1)
+
 admin:dev: npm error code 1
 admin:dev: npm error path /app/apps/admin
 admin:dev: npm error workspace admin@0.1.0
