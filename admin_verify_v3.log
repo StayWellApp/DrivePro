@@ -1,0 +1,89 @@
+npm warn Unknown cli config "--filter". This will stop working in the next major version of npm.
+npm warn Unknown project config "auto-install-peers". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> with-tailwind@1.0.0 dev
+> turbo run dev
+
+• turbo 2.9.6
+
+   • Packages in scope: @repo/database, @repo/eslint-config, @repo/i18n, @repo/schema, @repo/tailwind-config, @repo/typescript-config, @repo/ui, admin, api, instructor, student
+   • Running dev in 11 packages
+   • Remote caching disabled
+
+@repo/ui:dev:styles: cache bypass, force executing 4c5276c277a931c5
+api:dev: cache bypass, force executing aba6d448637b8d6f
+admin:dev: cache bypass, force executing 07cc932405042eba
+@repo/ui:dev:components: cache bypass, force executing 74e63c71c27ceda6
+student:dev: cache bypass, force executing 08124eb52dadb8ff
+api:dev: npm warn Unknown project config "auto-install-peers". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+@repo/ui:dev:components: npm warn Unknown project config "auto-install-peers". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+@repo/ui:dev:styles: npm warn Unknown project config "auto-install-peers". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+api:dev:
+api:dev: > api@1.0.0 dev
+api:dev: > nodemon src/index.ts
+api:dev:
+@repo/ui:dev:components:
+@repo/ui:dev:components: > @repo/ui@0.0.0 dev:components
+@repo/ui:dev:components: > tsc --watch
+@repo/ui:dev:components:
+student:dev: npm warn Unknown project config "auto-install-peers". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+@repo/ui:dev:styles:
+@repo/ui:dev:styles: > @repo/ui@0.0.0 dev:styles
+@repo/ui:dev:styles: > tailwindcss -i ./src/styles.css -o ./dist/index.css --watch
+@repo/ui:dev:styles:
+student:dev:
+student:dev: > student@0.1.0 dev
+student:dev: > next dev
+student:dev:
+admin:dev: npm warn Unknown project config "auto-install-peers". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+admin:dev:
+admin:dev: > admin@0.1.0 dev
+admin:dev: > next dev
+admin:dev:
+@repo/ui:dev:components: [2J[3J[H6:49:50 PM - Starting compilation in watch mode...
+@repo/ui:dev:components:
+api:dev: [33m[nodemon] 3.1.14[39m
+api:dev: [33m[nodemon] to restart at any time, enter `rs`[39m
+api:dev: [33m[nodemon] watching path(s): src/**/*[39m
+api:dev: [33m[nodemon] watching extensions: ts,json[39m
+api:dev: [32m[nodemon] starting `npx tsx src/index.ts src/index.ts`[39m
+@repo/ui:dev:styles: ≈ tailwindcss v4.2.2
+@repo/ui:dev:styles:
+api:dev: npm warn Unknown env config "auto-install-peers". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+api:dev: npm warn Unknown project config "auto-install-peers". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+admin:dev: ⚠ Port 3000 is in use by an unknown process, using available port 3001 instead.
+student:dev: ⚠ Port 3000 is in use by an unknown process, using available port 3002 instead.
+student:dev: ▲ Next.js 16.2.1 (Turbopack)
+admin:dev: ▲ Next.js 16.2.1 (Turbopack)
+student:dev: - Local:         http://localhost:3002
+student:dev: - Network:       http://192.168.0.2:3002
+student:dev: ✓ Ready in 3.6s
+admin:dev: - Local:         http://localhost:3001
+admin:dev: - Network:       http://192.168.0.2:3001
+admin:dev: ✓ Ready in 2.8s
+admin:dev: ⨯ Another next dev server is already running.
+admin:dev:
+admin:dev: - Local:        http://localhost:3000
+admin:dev: - PID:          2169096
+admin:dev: - Dir:          /app/apps/admin
+admin:dev: - Log:          .next/dev/logs/next-development.log
+admin:dev:
+admin:dev: Run kill 2169096 to stop it.
+admin:dev: [?25h
+admin:dev: npm error Lifecycle script `dev` failed with error:
+admin:dev: npm error code 1
+admin:dev: npm error path /app/apps/admin
+admin:dev: npm error workspace admin@0.1.0
+admin:dev: npm error location /app/apps/admin
+admin:dev: npm error command failed
+admin:dev: npm error command sh -c next dev
+api:dev: [32m[nodemon] still waiting for 4 sub-processes to finish...[39m
+student:dev: [?25h
+ ERROR  admin#dev: command (/app/apps/admin) /home/jules/.nvm/versions/node/v22.22.1/bin/npm run dev exited (1)
+
+ Tasks:    1 successful, 5 total
+Cached:    0 cached, 5 total
+  Time:    7.364s
+Failed:    admin#dev
+
+ ERROR  run failed: command  exited (1)

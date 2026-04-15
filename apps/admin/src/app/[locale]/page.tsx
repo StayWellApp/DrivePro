@@ -1,5 +1,3 @@
-"use client";
-
 import Shell from "./Shell";
 import { ObservatoryCard, DataChip } from "@repo/ui";
 

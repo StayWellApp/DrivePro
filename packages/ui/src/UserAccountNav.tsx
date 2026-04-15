@@ -14,11 +14,15 @@ interface UserAccountNavProps {
 }
 
 export const UserAccountNav: React.FC<UserAccountNavProps> = ({ user }) => {
-  // If no user, show a simple sign in/out placeholder to avoid "missing navigation"
+  const handleSignOut = () => {
+    // Using window.location.origin to ensure we stay on the same domain/port
+    signOut({ callbackUrl: `${window.location.origin}/login` });
+  };
+
   if (!user) {
     return (
       <button
-        onClick={() => signOut({ callbackUrl: "/login" })}
+        onClick={handleSignOut}
         className="ui:flex ui:items-center ui:gap-2 ui:px-4 ui:py-2 ui:rounded-xl ui:bg-slate-800 ui:text-slate-400 ui:text-xs ui:font-bold ui:uppercase"
       >
         <span className="material-symbols-outlined ui:text-sm">logout</span>
@@ -67,7 +71,7 @@ export const UserAccountNav: React.FC<UserAccountNavProps> = ({ user }) => {
 
           <DropdownMenu.Item className="ui:outline-none" asChild>
             <button
-              onClick={() => signOut({ callbackUrl: "/login" })}
+              onClick={handleSignOut}
               className="ui:w-full ui:flex ui:items-center ui:gap-3 ui:px-4 ui:py-3 ui:text-sm ui:font-bold ui:text-red-400 hover:ui:bg-red-500/10 ui:rounded-xl ui:transition-all ui:cursor-pointer"
             >
               <span className="material-symbols-outlined ui:text-lg">logout</span>
