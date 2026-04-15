@@ -3,7 +3,7 @@ import { ObservatoryCard, DataChip } from "@repo/ui";
 import Link from "next/link";
 
 export default function Dashboard() {
-  const fleetData = [];
+  const fleetData: any[] = [];
 
   return (
     <Shell
