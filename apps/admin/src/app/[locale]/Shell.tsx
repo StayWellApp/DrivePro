@@ -1,11 +1,11 @@
 import { ReactNode } from "react";
 import Link from "next/link";
 import { auth } from "@/auth";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { getLocale } from "next-intl/server";
 import StopImpersonatingButton from "./StopImpersonatingButton";
 import ProfileSwitcher from "./ProfileSwitcher";
-import { UserAccountNav } from "@repo/ui";
-
 export default async function Shell({
   children,
   title,
@@ -16,6 +16,8 @@ export default async function Shell({
   subtitle?: string;
 }) {
   const session = await auth();
+  const locale = await getLocale();
+  if (!session) redirect(`/${locale}/login`);
   const user = session?.user as any;
 
   let schoolBranding = { customLogoUrl: null };
@@ -124,9 +126,6 @@ export default async function Shell({
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
-            <UserAccountNav user={user} />
-          </div>
         </header>
 
         <section>{children}</section>

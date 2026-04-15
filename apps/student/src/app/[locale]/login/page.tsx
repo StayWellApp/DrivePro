@@ -21,9 +21,9 @@ export default function LoginPage() {
       if (role === "STUDENT") {
         router.push(callbackUrl || "/");
       } else if (role === "SUPER_ADMIN") {
-        window.location.href = `${window.location.origin}/super`;
+        window.location.href = "/super";
       } else {
-        window.location.href = `${window.location.origin}/dashboard`;
+        window.location.href = "/dashboard";
       }
     }
   }, [session, status, router, callbackUrl]);

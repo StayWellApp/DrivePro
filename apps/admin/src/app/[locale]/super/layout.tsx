@@ -2,8 +2,6 @@ import { ReactNode } from "react";
 import Link from "next/link";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import { UserAccountNav } from "@repo/ui";
-
 export default async function SuperLayout({
   children,
   params,
@@ -65,8 +63,18 @@ export default async function SuperLayout({
             Exit Super-Admin
           </Link>
 
-          <div className="pt-2">
-             <UserAccountNav user={user} />
+          <div className="pt-2 border-t border-white/5 mt-4">
+             <Link
+               href="/api/auth/force-signout"
+               className="flex items-center gap-3 px-5 py-4 rounded-2xl text-red-400 hover:bg-red-500/10 transition-all group w-full"
+             >
+               <span className="material-symbols-outlined text-red-400/60 group-hover:text-red-400 transition-colors">
+                 logout
+               </span>
+               <span className="text-sm font-bold tracking-tight">
+                 Logout
+               </span>
+             </Link>
           </div>
         </div>
       </aside>

@@ -15,7 +15,13 @@ export default function SponsorDashboardPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/shared/${token}/verify?passcode=${passcode || ''}`)
+    // Correct fallback if NEXT_PUBLIC_API_URL is missing, ensuring relative path for browser
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+    const fetchUrl = apiUrl
+      ? `${apiUrl}/shared/${token}/verify?passcode=${passcode || ''}`
+      : `/api/shared/${token}/verify?passcode=${passcode || ''}`;
+
+    fetch(fetchUrl)
       .then(res => {
         if (!res.ok) throw new Error("Unauthorized access");
         return res.json();

@@ -16,6 +16,8 @@ interface UserAccountNavProps {
 export const UserAccountNav: React.FC<UserAccountNavProps> = ({ user }) => {
   const handleSignOut = () => {
     // Using relative path for better cross-environment compatibility
+    // In many setups, the locale prefix might be needed, but NextAuth often handles this or it is handled by the middleware.
+    // For DrivePro, we ensure it goes back to a valid login page.
     signOut({ callbackUrl: "/login" });
   };
 
