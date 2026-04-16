@@ -4,10 +4,9 @@ import { ReactNode } from "react";
 import "../globals.css";
 import Link from "next/link";
 import { auth } from "@/auth";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import BrandingProvider from "@/components/BrandingProvider";
-import { UserAccountNav } from "@repo/ui";
-
 export default async function RootLayout({
   children,
   params,
@@ -19,6 +18,7 @@ export default async function RootLayout({
   const messages = await getMessages();
   const t = await getTranslations({ locale, namespace: "Navigation" });
   const session = await auth();
+  if (!session) redirect(`/${locale}/login`);
 
   let schoolBranding = { primaryColor: null, secondaryColor: null, customLogoUrl: null };
 
@@ -168,7 +168,6 @@ export default async function RootLayout({
                     <span className="material-symbols-outlined text-slate-400 hover:text-teal-500 cursor-pointer transition-colors">
                       help
                     </span>
-                    <UserAccountNav user={session?.user as any} />
                   </div>
                 </div>
               </header>

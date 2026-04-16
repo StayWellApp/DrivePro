@@ -21,8 +21,8 @@ export default function LoginPage() {
       if (role === "SUPER_ADMIN") {
         router.push("/super");
       } else if (role === "STUDENT") {
-        // Use window.location.origin to ensure we are not redirected to localhost:3000 by accident
-        window.location.href = `${window.location.origin}/`;
+        // Use relative path for better cross-environment compatibility
+        window.location.href = "/";
       } else {
         router.push(callbackUrl || "/dashboard");
       }

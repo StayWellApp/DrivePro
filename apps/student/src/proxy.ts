@@ -28,8 +28,11 @@ export default auth((req) => {
     }
 
     const encodedCallbackUrl = encodeURIComponent(callbackUrl);
+    const localeMatch = nextUrl.pathname.match(/^\/(cs|en|sk)/);
+    const locale = localeMatch ? localeMatch[1] : "en";
+
     return NextResponse.redirect(
-      new URL(`/login?callbackUrl=${encodedCallbackUrl}`, nextUrl),
+      new URL(`/${locale}/login?callbackUrl=${encodedCallbackUrl}`, nextUrl),
     );
   }
 
