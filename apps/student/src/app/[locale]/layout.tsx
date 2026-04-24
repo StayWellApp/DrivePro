@@ -1,12 +1,13 @@
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages, getTranslations } from "next-intl/server";
 import { ReactNode } from "react";
-import "../globals.css";
+import "./globals.css";
 import Link from "next/link";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import BrandingProvider from "@/components/BrandingProvider";
+
 export default async function RootLayout({
   children,
   params,
@@ -124,7 +125,7 @@ export default async function RootLayout({
                 </button>
 
                 <div className="pt-4 border-t border-slate-200/60 dark:border-slate-800/60">
-                   <Link
+                   <a
                      href="/api/auth/force-signout"
                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-red-500 hover:bg-red-500/10 transition-all group w-full"
                    >
@@ -134,7 +135,7 @@ export default async function RootLayout({
                      <span className="text-[11px] font-black uppercase tracking-widest">
                        Logout
                      </span>
-                   </Link>
+                   </a>
                 </div>
               </div>
             </aside>
