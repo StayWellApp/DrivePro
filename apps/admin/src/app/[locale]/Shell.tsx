@@ -88,7 +88,7 @@ export default async function Shell({
           )}
 
           <div className="px-2 border-t border-white/10 pt-4">
-             <Link
+             <a
                href="/api/auth/force-signout"
                className="flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 transition-all group w-full"
              >
@@ -98,7 +98,7 @@ export default async function Shell({
                <span className="text-sm font-bold tracking-wide">
                  Logout
                </span>
-             </Link>
+             </a>
           </div>
         </div>
       </aside>

@@ -21,12 +21,12 @@ export default function Dashboard() {
               <p className="text-sm text-slate-500 font-medium">If you are seeing incorrect data or are unable to log out, use the reset tool.</p>
            </div>
         </div>
-        <Link
+        <a
           href="/api/auth/force-signout"
           className="bg-slate-900 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl shadow-slate-900/10"
         >
           Reset Session Now
-        </Link>
+        </a>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8 mb-12">
