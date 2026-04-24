@@ -21,7 +21,9 @@ export async function GET(request: Request) {
     "next-auth.session-token",
     "__Secure-next-auth.session-token",
     "authjs.callback-url",
-    "authjs.csrf-token"
+    "authjs.csrf-token",
+    "next-auth.callback-url",
+    "next-auth.csrf-token"
   ];
 
   cookiesToClear.forEach(cookieName => {
@@ -30,7 +32,16 @@ export async function GET(request: Request) {
       maxAge: 0,
       expires: new Date(0),
     });
+    // Also try to clear with domain if applicable (sometimes localhost vs 127.0.0.1 causes issues)
+    response.cookies.set(cookieName, "", {
+      path: "/",
+      maxAge: 0,
+      expires: new Date(0),
+      domain: url.hostname
+    });
   });
+
+  console.log("DEBUG: Force sign-out triggered. Cookies cleared.");
 
   return response;
 }
