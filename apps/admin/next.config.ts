@@ -1,4 +1,5 @@
 import createNextIntlPlugin from "next-intl/plugin";
+import path from "path";
 
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
@@ -12,6 +13,9 @@ const nextConfig: import("next").NextConfig = {
     // your project has type errors.
     // !! WARN !!
     // ignoreBuildErrors: true,
+  },
+  turbopack: {
+    root: path.resolve(process.cwd(), "../../"),
   },
 };
 
