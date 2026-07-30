@@ -1,0 +1,24 @@
+{
+  "hosting": [
+    {
+      "target": "apps/student",
+      "source": "apps/student"
+    },
+    {
+      "target": "apps/admin",
+      "source": "apps/admin"
+    }
+  ],
+  "functions": [
+    {
+      "source": "apps/api",
+      "codebase": "api",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firestore-debug.log"
+      ]
+    }
+  ]
+}

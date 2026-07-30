@@ -13,7 +13,7 @@ import multer from "multer";
 import rateLimit from "express-rate-limit";
 import { calculateVideoOffset } from "./services/videoProcessor.js";
 
-const app = express();
+export const app = express();
 const server = createServer(app);
 
 const io = new Server(server, {

@@ -1,7 +1,7 @@
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages, getTranslations } from "next-intl/server";
 import { ReactNode } from "react";
-import "./globals.css";
+import "../globals.css";
 import Link from "next/link";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
