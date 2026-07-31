@@ -1,8 +1,4 @@
-"use client";
-
-import React from "react";
-
-export const dynamic = "force-dynamic";
+'use client';
 
 export default function GlobalError({
   error,
@@ -12,25 +8,16 @@ export default function GlobalError({
   reset: () => void;
 }) {
   return (
-    <html>
-      <body className="min-h-screen bg-slate-50 flex items-center justify-center p-8">
-        <div className="max-w-md w-full text-center">
-          <div className="w-20 h-20 bg-red-100 rounded-[30px] flex items-center justify-center mx-auto mb-8 shadow-xl shadow-red-500/10">
-            <span className="material-symbols-outlined text-red-500 text-4xl">error</span>
-          </div>
-          <h1 className="text-4xl font-black text-slate-900 mb-4 uppercase">System Halted</h1>
-          <p className="text-slate-500 font-medium mb-12">
-            An unexpected error occurred in the administration portal. Your session is active, but we couldn't render this view.
-          </p>
-
-          <div className="flex flex-col gap-4">
-            <button
-              onClick={() => reset()}
-              className="w-full bg-slate-900 text-white font-black py-4 rounded-2xl hover:bg-slate-800 transition-all"
-            >
-              Retry
-            </button>
-          </div>
+    <html lang="cs">
+      <body>
+        <div style={{ display: 'flex', minHeight: '100vh', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '1rem', textAlign: 'center' }}>
+          <h2>Něco se nepovedlo!</h2>
+          <button
+            onClick={() => reset()}
+            style={{ marginTop: '1rem', padding: '0.5rem 1rem', borderRadius: '0.25rem', backgroundColor: '#1E40AF', color: '#ffffff', border: 'none', cursor: 'pointer' }}
+          >
+            Zkusit znovu
+          </button>
         </div>
       </body>
     </html>
