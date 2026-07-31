@@ -6,6 +6,11 @@ const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   transpilePackages: ["@repo/database"],
+  serverExternalPackages: ["@prisma/client"],
+  typescript: {
+    // Prevent deployment halts on minor type warnings during initial build validation
+    ignoreBuildErrors: false,
+  },
   turbopack: {
     root: path.resolve(process.cwd(), "../../"),
   },

@@ -7,12 +7,10 @@ const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 const nextConfig: import("next").NextConfig = {
   output: "standalone",
   transpilePackages: ["@repo/database", "@repo/ui", "@repo/tailwind-config"],
+  serverExternalPackages: ["@prisma/client"],
   typescript: {
-    // !! WARN !!
-    // Dangerously allow production builds to successfully complete even if
-    // your project has type errors.
-    // !! WARN !!
-    // ignoreBuildErrors: true,
+    // Prevent deployment halts on minor type warnings during initial build validation
+    ignoreBuildErrors: false,
   },
   turbopack: {
     root: path.resolve(process.cwd(), "../../"),
