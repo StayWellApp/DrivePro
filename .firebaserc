@@ -1,0 +1,16 @@
+{
+  "projects": {},
+  "targets": {
+    "drivepro-e39d7": {
+      "hosting": {
+        "apps/student": [
+          "drivepro-e39d7"
+        ],
+        "apps/admin": [
+          "drivepro-admin"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}
